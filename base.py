@@ -21,19 +21,21 @@ Created for pyExtremeLM
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 # System modules
-import abc
+from abc import ABCMeta, abstractmethod
 
 # External modules
 import numpy as np
 from sklearn.cross_validation import KFold, LeaveOneOut
 
 # Internal modules
-from .activations import _activations
+from pyExtremeLM.activations import _activations
 
 __version__ = "0.1"
 
 
 class ELMBase(object):
+    __metaclass__ = ABCMeta
+
     def __init__(self, hidden_neurons, activation_funct="sigm", bias=True,
                  constraint="cv", k=3):
         """
@@ -164,22 +166,28 @@ class ELMBase(object):
         loo = LeaveOneOut(length_array)
         return loo
 
-    @abc.abstractmethod
+    @abstractmethod
     def fit(self):
         """
         The public method to fit the extreme learning machine.
         """
         pass
 
-    @abc.abstractmethod
+    @abstractmethod
+
+    @abstractmethod
     def _train(self):
         """
         The private method to train the extreme learning machine
         """
 
-    @abc.abstractmethod
+    @abstractmethod
     def predict(self):
         """
         The method to predict with the trained extreme learning machine.
         """
         pass
+
+
+if __name__ == "__main__":
+    ELMBase(5)
