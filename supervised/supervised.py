@@ -51,3 +51,7 @@ class ELMSupervised(ELMBase):
 
     def _train(self, X, y):
         pass
+
+
+class ELMSKSupervised(ELMBase):
+    pass

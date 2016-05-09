@@ -30,9 +30,9 @@ from .supervised import ELMSupervised, ELMSKSupervised
 __version__ = "0.1"
 
 
-class ELMRegressor(ELMSupervised):
+class ELMClassifier(ELMSupervised):
     pass
 
 
-class ELMSKRegressor(ELMSKSupervised):
+class ELMSKClassifier(ELMSKSupervised):
     pass
