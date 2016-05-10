@@ -28,7 +28,7 @@ import numpy as np
 from sklearn.cross_validation import KFold, LeaveOneOut
 
 # Internal modules
-from pyExtremeLM.activations import _activations
+from .activations import _activations
 
 __version__ = "0.1"
 
@@ -37,7 +37,7 @@ class ELMBase(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, hidden_neurons, activation_funct="sigm", bias=True,
-                 constraint="cv", k=3):
+                 constraint=None, k=3):
         """
         ELMBase is the extreme learning machine base object.
 
@@ -53,7 +53,7 @@ class ELMBase(object):
             constraint (Optional[str or None]):
                 Method to determine the constraint parameter ("cv"/"loo").
                 If None, the output weights aren't constraint.
-                Defaults is "cv".
+                Defaults is None.
             k (Optional[int]): Number of folds for the cross-validation.
                 Defaults is 3.
 
@@ -174,12 +174,18 @@ class ELMBase(object):
         pass
 
     @abstractmethod
+    def _train_fixed(self):
+        """
+        Method to train the extreme learning machine with cross-validation.
+        """
+        pass
 
     @abstractmethod
     def _train(self):
         """
         The private method to train the extreme learning machine
         """
+        pass
 
     @abstractmethod
     def predict(self):

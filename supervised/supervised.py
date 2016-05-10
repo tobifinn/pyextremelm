@@ -40,17 +40,29 @@ class ELMSupervised(ELMBase):
             X (np.array): The training input array.
             y (np.array): The training output array.
         """
-        #
         if self.bias:
             X = np.column_stack([X, np.ones([X.shape[0], 1])])
-        #self.training_data = {"X": X, "y": y}
-        if self.hidden_method in ["cv", "loo"]:
-            self._train_cv(X, y)
-        else:   # fixed number
-            self._train_fixed(X, y)
+        # self.training_data = {"X": X, "y": y}
+        self._train_fixed(X, y)
+
+    def _train_fixed(self, X, y):
+        if self.constraint_method is None:
+            self._train(X, y)
 
     def _train(self, X, y):
-        pass
+        self.random_weights = np.random.randn(X.shape[1],
+                                              self.n_hidden_neurons)
+        G = np.tanh(X.dot(self.random_weights))
+        self.output_weights = np.linalg.pinv(G).dot(y)
+
+    def predict(self, X):
+        if len(X.shape) > 1:
+            X = np.column_stack([X, np.ones([X.shape[0], 1])])
+        else:
+            X = np.column_stack(np.append(X, 1))
+        G = np.tanh(X.dot(self.random_weights))
+        return G.dot(self.output_weights)
+
 
 
 class ELMSKSupervised(ELMBase):
