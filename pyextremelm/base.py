@@ -36,8 +36,9 @@ __version__ = "0.1"
 class ELMBase(object):
     __metaclass__ = ABCMeta
 
-    def __init__(self, hidden_neurons, activation_funct="sigm", bias=True,
-                 constraint=None, k=3):
+    def __init__(self, hidden_neurons, activation_funct="sigmoid", bias=True,
+                 rand_iter = 30, rand_select = "best"):
+                 # constraint=None, k=3):
         """
         ELMBase is the extreme learning machine base object.
 
@@ -89,40 +90,18 @@ class ELMBase(object):
         self.n_input_neurons = 0
         self.n_output_neurons = 0
         self.constraint_param = 0
-        self.k = k
+        # self.k = k
         self.random_weights = np.empty((0, 0))
         self.output_weights = np.empty((0, 0))
-        self.training_data = {"X": None, "y": None}
-        self.activation_function = self._select_activation(activation_funct)
-        self.constraint_method = constraint
-        # Get hidden neurons information.
-        if isinstance(hidden_neurons, str):
-            self.hidden_method = hidden_neurons
-            self.n_hidden_neurons = 0
-        else:
-            assert not isinstance(hidden_neurons, int), \
-                "{0} have to be a fixed integer {1} or a method to " \
-                "determine the {1} of {0}".format("hidden_neurons", "number")
-            self.hidden_method = "fixed"
-            self.n_hidden_neurons = hidden_neurons
-            #        self.random_weights = np.empty((self.n_input_neurons+int(bias), n_hidden_neurons))
-            #        self.output_weights = np.empty((n_hidden_neurons, self.n_output_neurons))
-
-    def _initialize_random_weights(self, n_hidden_neurons=None):
-        """
-        Initialize the random weights.
-
-        Args:
-            n_hidden_neurons (int): Number of hidden neurons.
-                If None, self.n_hidden_neurons. Defaults is None.
-        """
-        if n_hidden_neurons is None:
-            n_hidden_neurons = self.n_hidden_neurons
-        self.random_weights = np.random.randn(
-            self.n_input_neurons + int(self.bias), n_hidden_neurons)
+        # self.training_data = {"X": None, "y": None}
+        self.activation_function = self._get_activation(activation_funct)
+        # self.constraint_method = constraint
+        self.n_hidden_neurons = hidden_neurons
+        self.rand_iter = rand_iter
+        self.rand_select = rand_select
 
     @staticmethod
-    def _get_activation(funct="sigm"):
+    def _get_activation(funct="sigmoid"):
         """
         Method to get the activation function
         Args:
@@ -139,32 +118,32 @@ class ELMBase(object):
         else:
             return funct
 
-    def _get_cv(self, length_array):
-        """
-        Uses the scikit-learn KFold method for the output.
-
-        Args:
-            length_array (int): The length of the array.
-
-        Returns:
-            kf (Kfold): The KFold object, iterable.
-        """
-        kf = KFold(length_array, n_folds=self.k)
-        return kf
-
-    @staticmethod
-    def _get_loo(length_array):
-        """
-        Uses the scikit-learn LeaveOneOut method for the output.
-
-        Args:
-            length_array (int): The length of the array.
-
-        Returns:
-            loo (LeaveOneOut): The LeaveOneOut object, iterable.
-        """
-        loo = LeaveOneOut(length_array)
-        return loo
+    # def _get_cv(self, length_array):
+    #     """
+    #     Uses the scikit-learn KFold method for the output.
+    #
+    #     Args:
+    #         length_array (int): The length of the array.
+    #
+    #     Returns:
+    #         kf (Kfold): The KFold object, iterable.
+    #     """
+    #     kf = KFold(length_array, n_folds=self.k)
+    #     return kf
+    #
+    # @staticmethod
+    # def _get_loo(length_array):
+    #     """
+    #     Uses the scikit-learn LeaveOneOut method for the output.
+    #
+    #     Args:
+    #         length_array (int): The length of the array.
+    #
+    #     Returns:
+    #         loo (LeaveOneOut): The LeaveOneOut object, iterable.
+    #     """
+    #     loo = LeaveOneOut(length_array)
+    #     return loo
 
     @abstractmethod
     def fit(self):
@@ -172,13 +151,13 @@ class ELMBase(object):
         The public method to fit the extreme learning machine.
         """
         pass
-
-    @abstractmethod
-    def _train_fixed(self):
-        """
-        Method to train the extreme learning machine with cross-validation.
-        """
-        pass
+    #
+    # @abstractmethod
+    # def _train_fixed(self):
+    #     """
+    #     Method to train the extreme learning machine with cross-validation.
+    #     """
+    #     pass
 
     @abstractmethod
     def _train(self):
@@ -193,7 +172,3 @@ class ELMBase(object):
         The method to predict with the trained extreme learning machine.
         """
         pass
-
-
-if __name__ == "__main__":
-    ELMBase(5)

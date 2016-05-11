@@ -23,7 +23,7 @@ Based on: https://github.com/pypa/sampleproject
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 # System modules
-from setuptools import setup, find_packages
+from distutils.core import setup
 from codecs import open
 from os import path
 
@@ -33,9 +33,6 @@ from os import path
 
 __version__ = "0.1"
 
-here = path.abspath(path.dirname(__file__))
-with open(path.join(here, 'README.md'), encoding='utf-8') as f:
-    long_description = f.read()
 
 setup(
     name='pyextremelm',
@@ -43,10 +40,9 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.0.5',
+    version='0.1',
 
     description='An implementation of Extreme Learning Machines for python',
-    long_description=long_description,
 
     # The project's main homepage.
     url='https://github.com/maestrotf/pyExtremeLM',
@@ -81,6 +77,8 @@ setup(
 
     # What does your project relate to?
     keywords='machine learning neural network ann elm',
+    packages=["pyextremelm"],
+    package_dir={"pyextremelm": "pyextremelm"},
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
