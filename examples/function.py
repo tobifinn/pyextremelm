@@ -36,59 +36,68 @@ import matplotlib.pyplot as plt
 __version__ = "0.1"
 
 def x_trans(x):
-    return x**2
+    return np.sin(x)
 
 x_dimensions = 1
-train_size = 100
+train_size = 10000
 test_size = 1000
-hidden_neurons = 50
+hidden_neurons = 5
+
 
 x_train_size = (train_size, x_dimensions)
 x_test_size = (test_size, x_dimensions)
 
-train_x = np.random.uniform(0, 5, size=x_train_size)
+train_x = np.random.uniform(0, 10, size=x_train_size)
 train_y = x_trans(train_x)
-train_y += np.random.normal(0, 2, size=(train_size, 1))
+train_y += np.random.normal(0, 0.2, size=(train_size, 1))
 
 train_x_scaler = StandardScaler()
 train_x = train_x_scaler.fit_transform(train_x)
 train_y_scaler = StandardScaler()
 train_y = train_y_scaler.fit_transform(train_y)
 
-test_x = np.random.uniform(0, 5, size=x_test_size)
+test_x = np.random.uniform(0, 10, size=x_test_size)
 test_y = x_trans(test_x)
 
 test_x = train_x_scaler.transform(test_x)
 #print(np.c_[test_x, np.ones(test_x.shape[0])])
 
 # plot train data and real function
-x_range = np.arange(-5, 10, 0.1)
+x_range = np.arange(-5, 15, 0.1)
 fig = plt.figure()
 ax = plt.subplot()
-plt.plot(x_range, x_trans(x_range))
 plt.scatter(train_x_scaler.inverse_transform(train_x),
             train_y_scaler.inverse_transform(train_y))
+plt.plot(x_range, x_trans(x_range), color="0")
 
 
 
-instances = [pyextremelm.ELMRegressor(hidden_neurons, rand_iter=100),
-             pyextremelm.ELMSKSupervised(
+instances = [
+    pyextremelm.ELMSKSupervised(
                  hidden_neurons,
                  RidgeCV(alphas=[.1, .25, .5, 1, 2, 5, 10, 100],
                              fit_intercept=False),
                  activation_funct="sigmoid",
                  rand_iter=100),
-             LinearRegression(fit_intercept=False)]
+    pyextremelm.ELMSKSupervised(
+        hidden_neurons,
+        LinearRegression(fit_intercept=False),
+        activation_funct="sigmoid",
+        rand_iter=100),
+    pyextremelm.ELMRegressor(hidden_neurons, rand_iter=100),
+    LinearRegression(fit_intercept=False)]
 
-
+i=1
 for instance in instances:
     instance.fit(train_x, train_y)
     prediction = instance.predict(test_x)
     print(
         np.mean((train_y_scaler.inverse_transform(prediction) - test_y) ** 2))
     y_range = instance.predict(train_x_scaler.transform(x_range.reshape(-1, 1)))
-    plt.plot(x_range, train_y_scaler.inverse_transform(y_range))
+    plt.plot(x_range, train_y_scaler.inverse_transform(y_range), label="%i"%i)
+    i+=1
 
-ax.set_xlim(-5, 10)
-ax.set_ylim(-5, 100)
+ax.set_xlim(-5, 15)
+ax.set_ylim(-2, 2)
+plt.legend()
 plt.show()
