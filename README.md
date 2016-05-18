@@ -1,7 +1,7 @@
 #pyextremelm
 pyextremelm is a **Python** module which implements the
 **Extreme Learning Machine** (ELM, [1]), in the style of **scikit-learn** [2]. </br>
-This repository is in the alpha (V. 0.1) stadium. It will grow with the time.
+This repository is in the alpha (V. 0.1) state. It will grow with the time.
 
 **Currently implemented:**
 <li>Regression learning based on the approach without any constrainment [1,3].
@@ -10,6 +10,7 @@ This repository is in the alpha (V. 0.1) stadium. It will grow with the time.
 <li>Random algorithm to get the best set of random weights.
 
 **Planned:**
+<li>Plotting function to visualize the Extreme Learning Machine with training results.
 <li>Any supervised learning with and without constrainment [1,3,4].
 <li>Unsupervised learning based on [5,6].
 <li>Support for unsupervised scikit-learn algorithms.
@@ -23,6 +24,7 @@ Written using Python 3.5.<br>
 It requires:
 <li>Numpy
 <li>Scikit-learn
+<li>Matplotlib
 
 
 

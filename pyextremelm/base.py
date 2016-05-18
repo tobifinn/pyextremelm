@@ -55,18 +55,12 @@ class ELMBase(object):
                 Method to determine the constraint parameter ("cv"/"loo").
                 If None, the output weights aren't constraint.
                 Defaults is None.
-            k (Optional[int]): Number of folds for the cross-validation.
-                Defaults is 3.
 
         Attributes:
             n_hidden_neurons (int or method):
                 Number of neurons in the hidden layer.
             n_input_neurons (int): Number of neurons in the input layer.
             n_output_neurons (int): Number of neurons in the output layer.
-            constraint_param (float):
-                The constraining parameter.
-            k (int): Number of folds for the cross-validation.
-                Defaults is 3.
             bias (bool): If the random weights have a bias.
             random_weights (np.array): Connection weights between the input
                 and the hidden layer. Size is (number of input neurons + 1) *
@@ -74,31 +68,19 @@ class ELMBase(object):
             output_weights (np.array): Connection weights between the hidden
                 and the output layer.
                 Size is number of hidden neurons * number of output neurons.
-            training_data (Dict[np.array]):
-                The training data container (X and (y)).
             activation_funct (function):
                 The activation function for the hidden layer.
-            constraint_method (str or None):
-                Method to determine the constraint parameter ("cv"/"loo").
-                If None, the output weights aren't constraint.
-            hidden_method (str):
-                The method to determine the number of hidden neurons.
-                "cv"/"loo"/"fixed"
-
         """
         self.bias = bias
         self.n_input_neurons = 0
-        self.n_output_neurons = 0
-        self.constraint_param = 0
-        # self.k = k
-        self.random_weights = np.empty((0, 0))
-        self.output_weights = np.empty((0, 0))
-        # self.training_data = {"X": None, "y": None}
-        self.activation_function = self._get_activation(activation_funct)
-        # self.constraint_method = constraint
         self.n_hidden_neurons = hidden_neurons
+        self.n_output_neurons = 0
+        self.random_weights = None
+        self.output_weights = None
+        self.activation_function = self._get_activation(activation_funct)
         self.rand_iter = rand_iter
         self.rand_select = rand_select
+        self.training_information = {"samples": None, "accuracy": None}
 
     @staticmethod
     def _get_activation(funct="sigmoid"):
@@ -170,5 +152,16 @@ class ELMBase(object):
     def predict(self):
         """
         The method to predict with the trained extreme learning machine.
+        """
+        pass
+
+    def plot(self, file_path, resolution, dpi):
+        """
+        Method to plot the Extreme Learning Machine
+        Args:
+            file_path [str]: The path where the file should be saved.
+            resolution (list[int]: The resolution of the image.
+                The list format is [width, height] (e.g. [1024,768]).
+            dpi (int): The density of pixels per inch.
         """
         pass

@@ -39,9 +39,9 @@ def x_trans(x):
     return np.sin(x)
 
 x_dimensions = 1
-train_size = 10000
-test_size = 1000
-hidden_neurons = 5
+train_size = 100
+test_size = 350
+hidden_neurons = 10
 
 
 x_train_size = (train_size, x_dimensions)
@@ -49,7 +49,7 @@ x_test_size = (test_size, x_dimensions)
 
 train_x = np.random.uniform(0, 10, size=x_train_size)
 train_y = x_trans(train_x)
-train_y += np.random.normal(0, 0.2, size=(train_size, 1))
+train_y += np.random.normal(0, np.abs(x_trans(10)/10), size=(train_size, 1))
 
 train_x_scaler = StandardScaler()
 train_x = train_x_scaler.fit_transform(train_x)
@@ -71,28 +71,35 @@ plt.scatter(train_x_scaler.inverse_transform(train_x),
 plt.plot(x_range, x_trans(x_range), color="0")
 
 
+#
+# instances = [
+#     pyextremelm.ELMSKSupervised(
+#                  hidden_neurons,
+#                  RidgeCV(alphas=[.1, .25, .5, 1, 2, 5, 10, 100],
+#                              fit_intercept=False),
+#                  activation_funct="sigmoid",
+#                  rand_iter=100),
+#     pyextremelm.ELMSKSupervised(
+#         hidden_neurons,
+#         LinearRegression(fit_intercept=False),
+#         activation_funct="sigmoid",
+#         rand_iter=100),
+#     pyextremelm.ELMRegressor(hidden_neurons, rand_iter=100),
+#     LinearRegression(fit_intercept=False)]
 
 instances = [
-    pyextremelm.ELMSKSupervised(
-                 hidden_neurons,
-                 RidgeCV(alphas=[.1, .25, .5, 1, 2, 5, 10, 100],
-                             fit_intercept=False),
-                 activation_funct="sigmoid",
-                 rand_iter=100),
-    pyextremelm.ELMSKSupervised(
-        hidden_neurons,
-        LinearRegression(fit_intercept=False),
-        activation_funct="sigmoid",
-        rand_iter=100),
+    pyextremelm.ELMRegressor(hidden_neurons, activation_funct="tanh", rand_iter=100),
     pyextremelm.ELMRegressor(hidden_neurons, rand_iter=100),
     LinearRegression(fit_intercept=False)]
 
 i=1
 for instance in instances:
     instance.fit(train_x, train_y)
+    # print(instance.output_weights.shape)
     prediction = instance.predict(test_x)
     print(
-        np.mean((train_y_scaler.inverse_transform(prediction) - test_y) ** 2))
+        np.mean((train_y_scaler.inverse_transform(prediction) - test_y) ** 2),
+        np.mean(train_y_scaler.inverse_transform(prediction) - test_y))
     y_range = instance.predict(train_x_scaler.transform(x_range.reshape(-1, 1)))
     plt.plot(x_range, train_y_scaler.inverse_transform(y_range), label="%i"%i)
     i+=1
