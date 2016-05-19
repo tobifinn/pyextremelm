@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Created on 06.05.16
-Created for pyExtremeLM
+Created on 19.05.16
+Created for pyextremelm
 
 @author: Tobias Sebastian Finn, tobias.sebastian.finn@studium.uni-hamburg.de
 
@@ -25,10 +25,9 @@ Created for pyExtremeLM
 # External modules
 
 # Internal modules
-from .supervised import ELMSupervised
+
 
 __version__ = "0.1"
 
 
-class ELMClassifier(ELMSupervised):
-    pass
+__all__ = []

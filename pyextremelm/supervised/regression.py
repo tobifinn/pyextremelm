@@ -24,6 +24,7 @@ Created for pyExtremeLM
 
 # External modules
 import numpy as np
+from sklearn.base import clone
 
 # Internal modules
 from .supervised import ELMSupervised
@@ -32,22 +33,11 @@ __version__ = "0.1"
 
 
 class ELMRegressor(ELMSupervised):
-    def _train(self, X, y):
-        weights = []
-        accuracy = []
-        for i in range(self.rand_iter):
-            weights.append(np.random.randn(
-                X.shape[1] if len(X.shape)>1 else 1,
-                self.n_hidden_neurons))
-            #print(X.shape, weights[i].shape, y.shape)
-            G = self.activation_function(X.dot(weights[i]))
-            output_weights = np.linalg.pinv(G).dot(y)
-            accuracy.append(np.mean((G.dot(output_weights)-y)**2))
-        if self.rand_select == "best":
-            best_key = accuracy.index(min(accuracy))
-        self.random_weights = weights[best_key]
-        G = self.activation_function(X.dot(self.random_weights))
-        self.output_weights = np.linalg.pinv(G).dot(y)
+    def _calc_output_weights(self, X, y):
+        return np.linalg.pinv(X).dot(y)
+
+    def _calc_accuracy(self, X, y, output_weights):
+        return np.mean((X.dot(output_weights) - y) ** 2)
 
     def predict(self, X):
         if self.bias:
@@ -57,3 +47,34 @@ class ELMRegressor(ELMSupervised):
                 X = np.column_stack(np.append(X, 1))
         G = self.activation_function(X.dot(self.random_weights))
         return G.dot(self.output_weights)
+
+
+class ELMSKRegressor(ELMSupervised):
+    def __init__(self, hidden_neurons, sklearn_funct,
+                 activation_funct="sigmoid", bias=True,
+                 rand_iter = 30, rand_select = "best"):
+        super().__init__(hidden_neurons, activation_funct, bias,
+                 rand_iter, rand_select)
+        self.sklearn_funct = sklearn_funct
+
+    def _train(self, X, y):
+        weights = []
+        accuracy = []
+        for i in range(self.rand_iter):
+            weights.append(np.random.randn(
+                X.shape[1] if len(X.shape)>1 else 1,
+                self.n_hidden_neurons))
+            G = self.activation_function(X.dot(weights[i]))
+            test_funct = clone(self.sklearn_funct).fit(G, y)
+            accuracy.append(np.mean((test_funct.predict(G) - y) ** 2))
+        if self.rand_select == "best":
+            best_key = accuracy.index(min(accuracy))
+        self.random_weights = weights[best_key]
+        G = self.activation_function(X.dot(self.random_weights))
+        self.output_weights = clone(self.sklearn_funct).fit(G, y)
+
+    def predict(self, X):
+        if self.bias:
+            X = np.c_[X, np.ones(X.shape[0])]
+        G = self.activation_function(X.dot(self.random_weights))
+        return self.output_weights.predict(G)

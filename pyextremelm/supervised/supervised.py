@@ -24,7 +24,7 @@ Created for pyExtremeLM
 
 # External modules
 import numpy as np
-from sklearn.base import clone
+
 
 # Internal modules
 from ..base import ELMBase
@@ -57,21 +57,6 @@ class ELMSupervised(ELMBase):
         self._train(X, y)
 
     def _train(self, X, y):
-        pass
-
-    def predict(self, X):
-        pass
-
-
-class ELMSKSupervised(ELMSupervised):
-    def __init__(self, hidden_neurons, sklearn_funct,
-                 activation_funct="sigmoid", bias=True,
-                 rand_iter = 30, rand_select = "best"):
-        super().__init__(hidden_neurons, activation_funct, bias,
-                 rand_iter, rand_select)
-        self.sklearn_funct = sklearn_funct
-
-    def _train(self, X, y):
         weights = []
         accuracy = []
         for i in range(self.rand_iter):
@@ -79,20 +64,20 @@ class ELMSKSupervised(ELMSupervised):
                 X.shape[1] if len(X.shape)>1 else 1,
                 self.n_hidden_neurons))
             G = self.activation_function(X.dot(weights[i]))
-            test_funct = clone(self.sklearn_funct).fit(G, y)
-            accuracy.append(np.mean((test_funct.predict(G) - y) ** 2))
+            output_weights = self._calc_output_weights(G, y)
+            accuracy.append(self._calc_accuracy(G, y, output_weights))
         if self.rand_select == "best":
             best_key = accuracy.index(min(accuracy))
         self.random_weights = weights[best_key]
         G = self.activation_function(X.dot(self.random_weights))
-        self.output_weights = clone(self.sklearn_funct).fit(G, y)
+        self.output_weights = self._calc_output_weights(G, y)
+
+    def _calc_output_weights(self, X, y):
+        pass
+
+    def _calc_accuracy(self, X, y, output_weights):
+        pass
 
     def predict(self, X):
-        if self.bias:
-            X = np.c_[X, np.ones(X.shape[0])]
-            # if len(X.shape) > 1:
-            #     X = np.column_stack([X, np.ones([X.shape[0], 1])])
-            # else:
-            #     X = np.column_stack(np.append(X, 1))
-        G = self.activation_function(X.dot(self.random_weights))
-        return self.output_weights.predict(G)
+        pass
+

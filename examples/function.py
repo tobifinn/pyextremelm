@@ -28,6 +28,8 @@ import pyextremelm
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LinearRegression, LassoCV, RidgeCV
+from sklearn.neighbors import NearestNeighbors
+from sklearn.neighbors import KNeighborsRegressor
 import matplotlib.pyplot as plt
 
 # Internal modules
@@ -35,11 +37,18 @@ import matplotlib.pyplot as plt
 
 __version__ = "0.1"
 
+# def x_trans(x):
+#     #print(x)
+#     y = x.copy()
+#     y[:] = 0
+#     y[x>5] = 1
+#     y[x>6] = 0
+#     return y
 def x_trans(x):
-    return np.sin(x)
+    return np.log(np.power(x, 0.5))
 
 x_dimensions = 1
-train_size = 100
+train_size = 700
 test_size = 350
 hidden_neurons = 10
 
@@ -49,7 +58,7 @@ x_test_size = (test_size, x_dimensions)
 
 train_x = np.random.uniform(0, 10, size=x_train_size)
 train_y = x_trans(train_x)
-train_y += np.random.normal(0, np.abs(x_trans(10)/10), size=(train_size, 1))
+train_y += np.random.normal(0, 0.3, size=(train_size, 1))
 
 train_x_scaler = StandardScaler()
 train_x = train_x_scaler.fit_transform(train_x)
@@ -88,7 +97,6 @@ plt.plot(x_range, x_trans(x_range), color="0")
 #     LinearRegression(fit_intercept=False)]
 
 instances = [
-    pyextremelm.ELMRegressor(hidden_neurons, activation_funct="tanh", rand_iter=100),
     pyextremelm.ELMRegressor(hidden_neurons, rand_iter=100),
     LinearRegression(fit_intercept=False)]
 

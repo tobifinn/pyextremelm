@@ -100,6 +100,10 @@ class ELMBase(object):
         else:
             return funct
 
+    @staticmethod
+    def _get_random_weights(size):
+        pass
+
     # def _get_cv(self, length_array):
     #     """
     #     Uses the scikit-learn KFold method for the output.
