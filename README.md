@@ -9,6 +9,7 @@ Firstly the ELM was a Single Hidden-layer Feedforward Neural Network (SLFN),
 but nowadays there are methods to implement a multilayer network based ELM.</br>
 The main idea is that the weights between the input and the hidden neurons
 don't need to be trained to fit any function.</br>
+
 In this module are two different possibilities to fit an ELM.</br>
 One possibility is
 to use the **pre-configured networks**, were only the number of hidden neurons have
@@ -20,14 +21,15 @@ idea of the builder is that the **differences between different layers are
 the different training approaches** (e.g. the difference between a
 regression output layer and an hidden layer are only the linear regression and
 the random weights, but they have both neurons, which needs to be trained).</br>
+
 Due to the fact, that the networks have **almost the same syntax as the
 scikit-learn module** you can insert such a network into the pipline module of
 scikit-learn.
 Some basic examples (at the moment only a simple sinus regression and the use
 of the auto-encoder for images) could be found in the examples folder.
 
-Due to the fact, that this project is rapidly developing, some of the code
-hasn't any doc string yet and also the documentation could be expanded.
+This project is rapidly developing, so some of the code
+hasn't any docstring yet and also the documentation isn't complete.
 
 
 **Currently implemented:**
