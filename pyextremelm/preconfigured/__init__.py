@@ -26,6 +26,7 @@ Created for pyextremelm
 # External modules
 
 # Internal modules
-from .preconfigured import *
+from .supervised import *
+from .unsupervised import *
 
 __version__ = "0.1"

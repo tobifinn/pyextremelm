@@ -22,10 +22,48 @@ Created for pyextremelm
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 # System modules
+import abc
 
 # External modules
+import numpy as np
 
 # Internal modules
-from .preconfigured import *
 
-__version__ = "0.1"
+
+__version__ = ""
+
+
+class Metric(object):
+    def __init__(self, prediction, true=None):
+        self.prediction = prediction
+        self.true = true
+
+    @abc.abstractmethod
+    def calc_score(self):
+        pass
+
+    @abc.abstractmethod
+    def better(self, value):
+        pass
+
+    @property
+    def score(self):
+        return self.calc_score()
+
+
+class MeanSquaredError(Metric):
+    def calc_score(self):
+        return np.mean((self.prediction-self.true)**2)
+
+    def better(self, value):
+        if self.score < value:
+            return True
+        else:
+            return False
+
+class NoMetric(Metric):
+    def calc_score(self):
+        return 0
+
+    def better(self, value):
+        return True

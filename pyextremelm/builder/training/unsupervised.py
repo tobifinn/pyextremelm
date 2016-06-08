@@ -26,6 +26,30 @@ Created for pyextremelm
 # External modules
 
 # Internal modules
-from .preconfigured import *
+from ..helpers import add_bias
+from ..activations import sigmoid
+from .random import ELMOrthoRandom
+from .supervised import ELMRidge, ELMLasso
 
 __version__ = "0.1"
+
+
+def ELMAE(X=None, y=None, n_neurons=1, bias=True, C=0):
+    X = add_bias(X, bias)
+    input_weights = ELMOrthoRandom(X=X["input"], y=y, n_neurons=n_neurons, bias=bias)
+    G = sigmoid(X, input_weights)
+    weights = ELMRidge(X=G, y=X["input"], C=C)
+    return {"input": weights["input"].T, "bias": None}
+
+
+def ELMSparseAE(X=None, y=None, n_neurons=1, bias=True, C=0):
+    X = add_bias(X, bias)
+    input_weights = ELMOrthoRandom(X=X["input"], y=y, n_neurons=n_neurons, bias=bias)
+    G = sigmoid(X, input_weights)
+    weights = ELMLasso(X=G, y=X["input"], C=C)
+    weights["input"] = weights["input"].reshape((weights["input"].shape[0], 1))
+    return {"input": weights["input"].T, "bias": None}
+
+
+def USELM(X=None, y=None, n_neurons=1, bias=True, C=0):
+    pass

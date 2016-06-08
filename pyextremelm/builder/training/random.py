@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Created on 19.05.16
+Created on 20.05.16
+
 Created for pyextremelm
 
 @author: Tobias Sebastian Finn, tobias.sebastian.finn@studium.uni-hamburg.de
@@ -23,11 +24,29 @@ Created for pyextremelm
 # System modules
 
 # External modules
+import numpy as np
+import scipy
 
 # Internal modules
-
+from .. import helpers
 
 __version__ = "0.1"
 
 
-__all__ = []
+def ELMRandom(X=None, y=None, n_neurons=1, bias=False):
+    weights = {"input": None, "bias": None}
+    weights["input"] = np.random.randn(helpers.get_dim(X), n_neurons)
+    if bias:
+        weights["bias"] = np.random.randn(1, n_neurons)
+    return weights
+
+def ELMOrthoRandom(X=None, y=None, n_neurons=1, bias=False):
+    weights = {"input": None, "bias": None}
+    input_weights = np.random.randn(helpers.get_dim(X), n_neurons)
+    if helpers.get_dim(X)>n_neurons:
+        weights["input"] = scipy.linalg.orth(input_weights)
+    else:
+        weights["input"] = scipy.linalg.orth(input_weights.T).T
+    if bias:
+        weights["bias"] = np.linalg.qr(np.random.randn(1, n_neurons).T)[0].T
+    return weights

@@ -26,6 +26,18 @@ Created for pyextremelm
 # External modules
 
 # Internal modules
-from .preconfigured import *
+from ..base import ELMLayer
+import pyextremelm.builder.training as ELMTraining
 
 __version__ = "0.1"
+
+
+class ELMRandom(ELMLayer):
+    def __init__(self, n_neurons, activation="sigmoid", bias=True):
+        super().__init__(n_neurons, ELMTraining.ELMRandom,
+                         activation, bias)
+
+class ELMOrthoRandom(ELMLayer):
+    def __init__(self, n_neurons, activation="sigmoid", bias=True):
+        super().__init__(n_neurons, ELMTraining.ELMOrthoRandom,
+                         activation, bias)

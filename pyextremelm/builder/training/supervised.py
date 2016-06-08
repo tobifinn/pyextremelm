@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on 20.05.16
+Created on 19.05.16
 
 Created for pyextremelm
 
@@ -24,8 +24,28 @@ Created for pyextremelm
 # System modules
 
 # External modules
+import numpy as np
+
+from sklearn.linear_model import Lasso
 
 # Internal modules
-from .preconfigured import *
 
 __version__ = "0.1"
+
+
+def ELMNaive(X=None, y=None, n_neurons=1, bias=False):
+    return {"input": np.linalg.pinv(X).dot(y), "bias": None}
+
+def ELMRidge(X=None, y=None, n_neurons=1, bias=False, C=0):
+    if C>0:
+        factors = np.linalg.inv(X.T.dot(X)+np.eye(X.shape[1])/C).dot(X.T).dot(y)
+    else:
+        factors = np.linalg.pinv(X).dot(y)
+    return {"input": factors, "bias": None}
+
+def ELMLasso(X=None, y=None, n_neurons=1, bias=False, C=0):
+    if C>0:
+        factors = Lasso(alpha=1/C, fit_intercept=False).fit(X, y).coef_
+    else:
+        factors = np.linalg.pinv(X).dot(y)
+    return {"input": factors, "bias": None}

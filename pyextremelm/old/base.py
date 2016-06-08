@@ -28,7 +28,7 @@ import numpy as np
 from sklearn.cross_validation import KFold, LeaveOneOut
 
 # Internal modules
-from .activations import _activations
+from .activations import all_activations
 
 __version__ = "0.1"
 
@@ -93,10 +93,10 @@ class ELMBase(object):
             function: The activation function
         """
         if isinstance(funct, str):
-            assert funct in _activations, \
+            assert funct in all_activations, \
                 "%s isn't implemented yet or isn't an available function name" \
                 % (funct)
-            return _activations[funct]
+            return all_activations[funct]
         else:
             return funct
 

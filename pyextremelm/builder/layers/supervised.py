@@ -26,6 +26,28 @@ Created for pyextremelm
 # External modules
 
 # Internal modules
-from .preconfigured import *
+from ..base import ELMLayer
+from ..training import supervised
 
 __version__ = "0.1"
+
+
+class ELMRegression(ELMLayer):
+    def __init__(self, train_algorithm, **kwargs):
+        super().__init__(1, train_algorithm, "linear", False, **kwargs)
+
+
+class ELMRidge(ELMRegression):
+    def __init__(self, C=0):
+        super().__init__(supervised.ELMRidge, C=C)
+
+
+class ELMLasso(ELMRegression):
+    def __init__(self, C=0):
+        super().__init__(supervised.ELMLasso, C=C)
+
+
+class ELMClassification(ELMLayer):
+    def __init__(self, output_neurons, train_algorithm, **kwargs):
+        super().__init__(output_neurons, train_algorithm, "linear", False,
+                         **kwargs)

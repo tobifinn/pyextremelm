@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on 06.05.16
-Created for pyExtremeLM
+Created on 20.05.16
+
+Created for pyextremelm
 
 @author: Tobias Sebastian Finn, tobias.sebastian.finn@studium.uni-hamburg.de
 
@@ -23,38 +24,8 @@ Created for pyExtremeLM
 # System modules
 
 # External modules
-import numpy as np
-import scipy.special
 
 # Internal modules
 
 
-__version__ = "0.1"
-
-
-def sigmoid(X):
-    """
-    The sigmoid function as array function
-    Args:
-        X (np.array): The input array.
-
-    Returns:
-        val (np.array): The activated array.
-    """
-    val = scipy.special.expit(X)
-    return val
-
-
-def tanh(X):
-    """
-    The tanh function
-    Args:
-        X (np.array): The input array.
-
-    Returns:
-        val (np.array): The activated array.
-    """
-    val = np.tanh(X)
-    return val
-
-_activations = {"sigmoid": sigmoid, "tanh": tanh}
+__version__ = ""

@@ -26,6 +26,11 @@ Created for pyextremelm
 # External modules
 
 # Internal modules
-from .preconfigured import *
+from .random import *
+from .supervised import *
+from .unsupervised import *
 
 __version__ = "0.1"
+
+
+__all__ = ["ELMNaive", "ELMRandom", "ELMAE", "ELMRidge", "ELMLasso", "ELMSparseAE"]

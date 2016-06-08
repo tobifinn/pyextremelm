@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on 20.05.16
-
+Created on 19.05.16
 Created for pyextremelm
 
 @author: Tobias Sebastian Finn, tobias.sebastian.finn@studium.uni-hamburg.de
@@ -26,6 +25,9 @@ Created for pyextremelm
 # External modules
 
 # Internal modules
-from .preconfigured import *
+from .base import *
 
 __version__ = "0.1"
+
+
+__all__ = ["ExtremeLearningMachine", "ELMLayer", "ELMTraining"]

@@ -26,6 +26,19 @@ Created for pyextremelm
 # External modules
 
 # Internal modules
-from .preconfigured import *
+from ..base import ELMLayer
+import pyextremelm.builder.training as ELMTraining
 
 __version__ = "0.1"
+
+
+class ELMAE(ELMLayer):
+    def __init__(self, n_neurons, activation="sigmoid", C=10E10):
+        super().__init__(n_neurons, ELMTraining.ELMAE,
+                         activation, True, C=C)
+
+
+class ELMSparseAE(ELMLayer):
+    def __init__(self, n_neurons, activation="sigmoid", C=1):
+        super().__init__(n_neurons, ELMTraining.ELMSparseAE,
+                         activation, True, C=C)
