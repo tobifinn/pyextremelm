@@ -46,8 +46,8 @@ hasn't any docstring yet and also the documentation isn't complete.
 <li>Supervised learning with any supervised scikit-learn function.
 <li>Unsupervised learning based on [5,6].
 <li>Support for unsupervised scikit-learn algorithms.
-<li>Constrainment based on the L1-norm (at the moment the lasso of scikit-learn
-is used for sparse regression) [8]
+<li>Constraint based on the L1-norm (at the moment the lasso of scikit-learn
+is used for sparse learning) [8]
 <li>Local receptive fields based extreme learning machine [9]
 <li>Plotting function to visualize the Extreme Learning Machine with training results.
 

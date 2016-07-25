@@ -21,6 +21,7 @@ Created for pyExtremeLM
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 # System modules
+import abc
 
 # External modules
 import numpy as np
@@ -32,7 +33,16 @@ import scipy.special
 __version__ = "0.1"
 
 
-def sigmoid(X, weights):
+class Activation(object):
+    def __init__(self, weights):
+        self.weights = weights
+
+    @abc.abstractmethod
+    def activate(self, X):
+        pass
+
+
+class Sigmoid(Activation):
     """
     The sigmoid activation.
     Args:
@@ -42,18 +52,19 @@ def sigmoid(X, weights):
     Returns:
         activated_array (np.array): The activated array.
     """
-    if weights["bias"] is None:
-        weights_array = weights["input"]
-        X_array = X["input"]
-    else:
-        weights_array = np.r_[weights["input"], weights["bias"]]
-        X_array = np.c_[X["input"], X["bias"]]
-    nonactivated_array = X_array.dot(weights_array)
-    array_activated = scipy.special.expit(nonactivated_array)
-    return array_activated
+    def activate(self, X):
+        if self.weights["bias"] is None:
+            weights_array = self.weights["input"]
+            X_array = X["input"]
+        else:
+            weights_array = np.r_[self.weights["input"], self.weights["bias"]]
+            X_array = np.c_[X["input"], X["bias"]]
+        nonactivated_array = X_array.dot(weights_array)
+        array_activated = scipy.special.expit(nonactivated_array)
+        return array_activated
 
 
-def tanh(X, weights):
+class Tanh(Activation):
     """
     The tanh activation.
     Args:
@@ -63,18 +74,19 @@ def tanh(X, weights):
     Returns:
         activated_array (np.array): The activated array.
     """
-    if weights["bias"] is None:
-        weights_array = weights["input"]
-        X_array = X["input"]
-    else:
-        weights_array = np.r_[weights["input"], weights["bias"]]
-        X_array = np.c_[X["input"], X["bias"]]
-    nonactivated_array = X_array.dot(weights_array)
-    activated_array = np.tanh(nonactivated_array)
-    return activated_array
+    def activate(self, X):
+        if self.weights["bias"] is None:
+            weights_array = self.weights["input"]
+            X_array = X["input"]
+        else:
+            weights_array = np.r_[self.weights["input"], self.weights["bias"]]
+            X_array = np.c_[X["input"], X["bias"]]
+        nonactivated_array = X_array.dot(weights_array)
+        activated_array = np.tanh(nonactivated_array)
+        return activated_array
 
 
-def fourier(X, weights):
+class Fourier(Activation):
     """
     The fourier activation.
     Args:
@@ -84,18 +96,19 @@ def fourier(X, weights):
     Returns:
         activated_array (np.array): The activated array.
     """
-    if weights["bias"] is None:
-        weights_array = weights["input"]
-        X_array = X["input"]
-    else:
-        weights_array = np.r_[weights["input"], weights["bias"]]
-        X_array = np.c_[X["input"], X["bias"]]
-    nonactivated_array = X_array.dot(weights_array)
-    activated_array = np.cos(nonactivated_array)
-    return activated_array
+    def activate(self, X):
+        if self.weights["bias"] is None:
+            weights_array = self.weights["input"]
+            X_array = X["input"]
+        else:
+            weights_array = np.r_[self.weights["input"], self.weights["bias"]]
+            X_array = np.c_[X["input"], X["bias"]]
+        nonactivated_array = X_array.dot(weights_array)
+        activated_array = np.cos(nonactivated_array)
+        return activated_array
 
 
-def gaussian(X, weights):
+class Gaussian(Activation):
     """
     The gaussian activation.
         X (dict[numpy array]): The input dict with input and bias key.
@@ -104,10 +117,12 @@ def gaussian(X, weights):
     Returns:
         activated_array (np.array): The activated array.
     """
-    return np.exp(-weights["bias"] * np.abs(X["input"] - weights["input"]))
+    def activate(self, X):
+        return np.exp(-self.weights["bias"] * np.abs(
+            X["input"] - self.weights["input"]))
 
 
-def multiquadratic(X, weights):
+class Multiquadratic(Activation):
     """
     The multiquadratic activation.
     Args:
@@ -117,11 +132,12 @@ def multiquadratic(X, weights):
     Returns:
         activated_array (np.array): The activated array.
     """
-    return np.sqrt(np.power(weights["bias"], 2) +
-                   np.abs(X["input"] - weights["input"]))
+    def activate(self, X):
+        return np.sqrt(np.power(self.weights["bias"], 2) +
+                       np.abs(X["input"] - self.weights["input"]))
 
 
-def hardlimit(X, weights):
+class Hardlimit(Activation):
     """
     The hardlimit activation.
     Args:
@@ -131,10 +147,13 @@ def hardlimit(X, weights):
     Returns:
         activated_array (np.array): The activated array.
     """
-    return ((X["input"].dot(weights["input"]) + weights["bias"]) <= 0).astype(int)
+    def activate(self, X):
+        return ((X["input"].dot(self.weights["input"]) +
+                 0 if self.weights["bias"] is None else self.weights["bias"])
+                <= 0).astype(int)
 
 
-def linear(X, weights):
+class Linear(Activation):
     """
     The linear activation, which combines the weights with the input.
     Args:
@@ -144,17 +163,39 @@ def linear(X, weights):
     Returns:
         activated_array (np.array): The activated array.
     """
-    if weights["bias"] is None:
-        weights_array = weights["input"]
-        X_array = X["input"]
-    else:
-        weights_array = np.r_[weights["input"], weights["bias"]]
-        X_array = np.c_[X["input"], X["bias"]]
-    activated_array = X_array.dot(weights_array)
-    return activated_array
+    def activate(self, X):
+        if self.weights["bias"] is None:
+            weights_array = self.weights["input"]
+            X_array = X["input"]
+        else:
+            weights_array = np.r_[self.weights["input"], self.weights["bias"]]
+            X_array = np.c_[X["input"], X["bias"]]
+        activated_array = X_array.dot(weights_array)
+        return activated_array
 
 
-named_activations = {"sigmoid": sigmoid, "tanh": tanh, "linear": linear,
-                     "gaussian": gaussian, "multiquadratic": multiquadratic,
-                     "hardlimit": hardlimit, "fourier": fourier}
+class Relu(Activation):
+    """
+    The relu activation, which combines the weights with the input.
+    Args:
+        X (dict[numpy array]): The input dict with input and bias key.
+        weights (numpy array): The weights dict with input and bias key.
+
+    Returns:
+        activated_array (np.array): The activated array.
+    """
+    def activate(self, X):
+        if self.weights["bias"] is None:
+            weights_array = self.weights["input"]
+            X_array = X["input"]
+        else:
+            weights_array = np.r_[self.weights["input"], self.weights["bias"]]
+            X_array = np.c_[X["input"], X["bias"]]
+        activated_array = X_array.dot(weights_array)
+        activated_array[activated_array<0] = 0
+        return activated_array
+
+named_activations = {"sigmoid": Sigmoid, "tanh": Tanh, "linear": Linear,
+                     "gaussian": Gaussian, "multiquadratic": Multiquadratic,
+                     "hardlimit": Hardlimit, "fourier": Fourier, "relu": Relu}
 unnamed_activations = []

@@ -24,20 +24,46 @@ Created for pyextremelm
 # System modules
 
 # External modules
+import numpy as np
+import scipy
 
 # Internal modules
 from ..base import ELMLayer
-import pyextremelm.builder.training as ELMTraining
 
 __version__ = "0.1"
 
 
 class ELMRandom(ELMLayer):
-    def __init__(self, n_neurons, activation="sigmoid", bias=True):
-        super().__init__(n_neurons, ELMTraining.ELMRandom,
-                         activation, bias)
+    def __init__(self, n_neurons, activation="sigmoid", bias=True, rng=None):
+        super().__init__(n_neurons, activation, bias)
+        self.rng = rng
+        if self.rng is None:
+           self.rng = np.random.RandomState(42)
+
+    def train_algorithm(self, X, y):
+        weights = {
+            "input": self.rng.randn(self.get_dim(X), self.n_neurons),
+            "bias": None}
+        if self.bias:
+            weights["bias"] = self.rng.randn(1, self.n_neurons)
+        return weights
+
 
 class ELMOrthoRandom(ELMLayer):
-    def __init__(self, n_neurons, activation="sigmoid", bias=True):
-        super().__init__(n_neurons, ELMTraining.ELMOrthoRandom,
-                         activation, bias)
+    def __init__(self, n_neurons, activation="sigmoid", bias=True, rng=None):
+        super().__init__(n_neurons, activation, bias)
+        self.rng = rng
+        if self.rng is None:
+           self.rng = np.random.RandomState(42)
+
+    def train_algorithm(self, X, y):
+        weights = {"input": None, "bias": None}
+        input_weights = self.rng.randn(self.get_dim(X), self.n_neurons)
+        if self.get_dim(X) > self.n_neurons:
+            weights["input"] = scipy.linalg.orth(input_weights)
+        else:
+            weights["input"] = scipy.linalg.orth(input_weights.T).T
+        if self.bias:
+            weights["bias"] = np.linalg.qr(self.rng.randn(1, self.n_neurons).T
+                                           )[0].T
+        return weights

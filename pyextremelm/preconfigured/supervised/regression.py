@@ -23,27 +23,23 @@ Created for pyExtremeLM
 # System modules
 
 # External modules
-import numpy as np
-from sklearn.base import clone
 
 # Internal modules
 from pyextremelm.builder import base as ELM
-from pyextremelm.builder import metrics, layers as ELMLayers
-#from .supervised import ELMSupervised
+from pyextremelm.builder import layers as ELMLayers
 
 __version__ = "0.1"
 
 
 class ELMRegressor(object):
-    def __init__(self, hidden_neurons, activation="sigmoid", C=0, iters=1):
-        self.elm = ELM.ExtremeLearningMachine(metrics.MeanSquaredError, iters)
-        self.elm.add_existing_layer(
+    def __init__(self, hidden_neurons, activation="sigmoid", C=0):
+        self.elm = ELM.ExtremeLearningMachine()
+        self.elm.add_layer(
             ELMLayers.ELMRandom(hidden_neurons, activation=activation))
-        self.elm.add_existing_layer(ELMLayers.ELMRidge(C=C))
+        self.elm.add_layer(ELMLayers.ELMRidge(C=C))
 
     def fit(self, X, y):
-        self.elm.fit(X, y)
+        return self.elm.fit(X, y)
 
     def predict(self, X):
         return self.elm.predict(X)
-

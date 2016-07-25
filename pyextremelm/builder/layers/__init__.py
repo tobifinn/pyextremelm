@@ -33,4 +33,5 @@ from .unsupervised import *
 __version__ = "0.1"
 
 
-__all__ = ["ELMNaive", "ELMRandom", "ELMAE", "ELMRidge", "ELMLasso", "ELMSparseAE"]
+__all__ = ["ELMRandom", 'ELMOrthoRandom', "ELMAE", "ELMRidge", "ELMLasso",
+           "ELMSparseAE", 'ELMClass']

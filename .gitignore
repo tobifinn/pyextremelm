@@ -212,3 +212,8 @@ javadoc/
 # lock file, a part of Oracle Credential Store Framework
 cwallet.sso.lck
 # Created by .ignore support plugin (hsz.mobi)
+/pyextremelm/theano_builder/
+examples/samples.mymemmap
+/pyextremelm/wip/
+/pyextremelm/builder/old_layers/
+/pyextremelm/builder/training/

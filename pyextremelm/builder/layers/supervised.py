@@ -24,30 +24,113 @@ Created for pyextremelm
 # System modules
 
 # External modules
+import numpy as np
+
+from sklearn.linear_model import Lasso
 
 # Internal modules
 from ..base import ELMLayer
-from ..training import supervised
 
 __version__ = "0.1"
 
 
-class ELMRegression(ELMLayer):
-    def __init__(self, train_algorithm, **kwargs):
-        super().__init__(1, train_algorithm, "linear", False, **kwargs)
-
-
-class ELMRidge(ELMRegression):
+class ELMRidge(ELMLayer):
     def __init__(self, C=0):
-        super().__init__(supervised.ELMRidge, C=C)
+        super().__init__(1, 'linear', False)
+        self.__C = C
+        self.K = None
+
+    def __str__(self):
+        s = "{0:s}(neurons: {1:d}, activation: {2:s}, bias: {3:s}, " \
+            "C: {4:s}, weighted: {5:s})".format(
+            self.__class__.__name__, self.n_neurons,
+            str(type(self.activation_funct).__name__), str(self.bias), str(self.__C),
+            str(self.weighted))
+        return s
+
+    def update(self, X, y):
+        try:
+            self.K += X.T.dot(X)
+            self.weights["input"] += np.linalg.inv(self.K).dot(X.T).dot(
+                y-X*self.weights["input"])
+        except:
+            self.K += X.dot(X.T)
+            self.weights["input"] += X.T.dot(np.linalg.inv(self.K)).dot(
+                y-X*self.weights["input"])
+
+    def train_algorithm(self, X, y):
+        self.n_neurons = y.shape[1]
+        if self.__C > 0:
+            try:
+                self.K = X.T.dot(X) + np.eye(X.shape[1]) / self.__C
+                factors = np.linalg.inv(self.K).dot(X.T).dot(y)
+            except:
+                self.K = X.dot(X.T) + np.eye(X.shape[1]) / self.__C
+                factors = X.T.dot(np.linalg.inv(self.K)).dot(y)
+        else:
+            self.K = X.T.dot(X)
+            factors = np.linalg.pinv(X).dot(y)
+        return {"input": factors, "bias": None}
 
 
-class ELMLasso(ELMRegression):
+class ELMLasso(ELMLayer):
     def __init__(self, C=0):
-        super().__init__(supervised.ELMLasso, C=C)
+        super().__init__(1, 'linear', False)
+        self.C = C
+
+    def __str__(self):
+        s = "{0:s}(neurons: {1:d}, activation: {2:s}, bias: {3:s}, " \
+            "C: {4:s})".format(
+            self.__class__.__name__, self.n_neurons,
+            str(type(self.activation_funct).__name__), str(self.bias), str(self.C))
+        return s
+
+    def train_algorithm(self, X, y):
+        self.n_neurons = y.shape[1]
+        if self.C > 0:
+            factors = Lasso(alpha=1 / self.C, fit_intercept=False).fit(
+                X, y).coef_
+        else:
+            factors = np.linalg.pinv(X).dot(y)
+        return {"input": factors.T, "bias": None}
 
 
-class ELMClassification(ELMLayer):
-    def __init__(self, output_neurons, train_algorithm, **kwargs):
-        super().__init__(output_neurons, train_algorithm, "linear", False,
-                         **kwargs)
+class ELMClass(object):
+    def __init__(self, labels=[]):
+        self.labels = labels
+
+    def __str__(self):
+        s = "{0:s}(labels: {1:s}, n_labels: {2:d})".format(
+            self.__class__.__name__, str(self.labels), self.n_labels)
+        return s
+
+    @property
+    def n_labels(self):
+        if not self.labels is None:
+            return len(self.labels)
+        else:
+            return 0
+
+    def labels_bin(self, X):
+        unique = list(np.unique(X))
+        for u in unique:
+            if u not in self.labels:
+                self.labels.append(u)
+        binarized = None
+        for l in self.labels:
+            labelized = (X == l).astype(int).reshape((-1, 1))
+            if binarized is None:
+                binarized = labelized
+            else:
+                binarized = np.c_[binarized, labelized]
+        #print(binarized.shape)
+        return binarized
+
+    def fit(self, X, y=None):
+        label, probs, X = self.predict(X)
+        return probs, label, X
+
+    def predict(self, X):
+        probs = (np.exp(X).T / np.sum(np.exp(X), axis=1)).T
+        label = np.array([self.labels[l] for l in probs.argmax(axis=1)])
+        return label, probs, X

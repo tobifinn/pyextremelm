@@ -25,10 +25,31 @@ Created for pyExtremeLM
 # External modules
 
 # Internal modules
-#from .supervised import ELMSupervised
+from pyextremelm.builder import base as ELM
+from pyextremelm.builder import layers as ELMLayers
+
 
 __version__ = "0.1"
 
 
-#class ELMClassifier(ELMSupervised):
-#    pass
+class ELMClassifier(object):
+    def __init__(self, hidden_neurons, activation="sigmoid", C=0):
+        self.classifier = ELMLayers.ELMClass()
+        self.elm = ELM.ExtremeLearningMachine()
+        self.elm.add_layer(
+            ELMLayers.ELMRandom(hidden_neurons, activation=activation))
+        self.elm.add_layer(ELMLayers.ELMRidge(C=C))
+        self.elm.add_layer(self.classifier)
+
+    def print_network_structure(self):
+        return self.elm.print_network_structure()
+
+    def labels_bin(self, X):
+        return self.classifier.labels_bin(X)
+
+    def fit(self, X, y):
+        y = self.classifier.labels_bin(y)
+        return self.elm.fit(X, y)
+
+    def predict(self, X):
+        return self.elm.predict(X)
