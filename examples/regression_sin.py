@@ -25,35 +25,23 @@ from time import time
 
 # External modules
 import numpy as np
-
 from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 
+# Internal modules
 from pyextremelm import ELMRegressor
-from pyextremelm.builder import metrics
 from pyextremelm.builder import ExtremeLearningMachine
 from pyextremelm.builder import layers as ELMLayers
 
-# Internal modules
-
-
 __version__ = "0.1"
 
-# def x_trans(x):
-#     #print(x)
-#     y = x.copy()
-#     y[:] = 0
-#     y[x>5] = 1
-#     y[x>6] = 0
-#     return y
 def x_trans(x):
     return np.sin(x)
 
 x_dimensions = 1
-train_size = 100
+train_size = 1000
 test_size = 350
-hidden_neurons = 10
+hidden_neurons = 500
 
 
 x_train_size = (train_size, x_dimensions)
@@ -85,56 +73,37 @@ plt.plot(x_range, x_trans(x_range), color="0")
 
 # initialize the extreme learning machines
 # ELM with constraint
-elm = ELMRegressor(hidden_neurons, C=10E10, iters=1)
-# ELM without constraint
-elmn = ELMRegressor(hidden_neurons, C=0, iters=100)
-# ELM with constraint and a fourier activation
-elmf = ELMRegressor(hidden_neurons, activation="fourier", C=10E10, iters=1)
-
-# Construct sparse autoencoded forecast
-elm_sparse = ExtremeLearningMachine(metrics.MeanSquaredError, 1)
-elm_sparse.add_existing_layer(ELMLayers.ELMSparseAE(hidden_neurons, C=10E10))
-elm_sparse.add_existing_layer(ELMLayers.ELMRandom(hidden_neurons))
-elm_sparse.add_existing_layer(ELMLayers.ELMLasso(C=10E10))
-
-# Construct constraint autoencoded forecast
-elmae = ExtremeLearningMachine(metrics.MeanSquaredError, 1)
-elmae.add_existing_layer(ELMLayers.ELMAE(hidden_neurons, C=10E10))
-elmae.add_existing_layer(ELMLayers.ELMRandom(hidden_neurons))
-elmae.add_existing_layer(ELMLayers.ELMRidge(C=10E10))
-
-instances = [
-    elm,
-    elmn,
-    elmf,
-    elm_sparse]
+elm = ELMRegressor(hidden_neurons, C=2E5)
+# # ELM without constraint
+elmn = ELMRegressor(hidden_neurons, C=0)
+# # ELM with constraint and a fourier activation
+elmf = ELMRegressor(hidden_neurons, activation="fourier", C=2E5)
 
 
-i=1
-for instance in instances:
+instances = {
+    'Standard': elm,
+    'w/o C':elmn,
+    'Fourier': elmf}
+
+
+for i in instances:
     t0 = time()
 
     # fit and predict for each instance
-    instance.fit(train_x, train_y)
-    prediction = instance.predict(test_x)
+    instances[i].fit(train_x, train_y)
+    prediction = instances[i].predict(test_x)
 
     # calculate the forecast performance
     print(
+        i,
         np.mean((train_y_scaler.inverse_transform(prediction) - test_y) ** 2),
-        np.mean(train_y_scaler.inverse_transform(prediction) - test_y),
-        np.mean((prediction - test_y) ** 2),
-        np.mean(prediction - test_y))
+        np.mean(train_y_scaler.inverse_transform(prediction) - test_y))
 
     # plot the forecast
-    y_range = instance.predict(train_x_scaler.transform(x_range.reshape(-1, 1)))
-    plt.plot(x_range, train_y_scaler.inverse_transform(y_range), label="%i"%i)
-    i+=1
-    print(time()-t0)
+    y_range = instances[i].predict(train_x_scaler.transform(x_range.reshape(-1, 1)))
+    plt.plot(x_range, train_y_scaler.inverse_transform(y_range), label="%s"%i)
 
 ax.set_xlim(-5, 15)
 ax.set_ylim(-2, 2)
 plt.legend()
 plt.show()
-
-
-#print(elm.training_info["train_time"], elmae.training_info["train_time"])

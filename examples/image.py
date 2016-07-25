@@ -26,21 +26,17 @@ Created for pyextremelm
 # External modules
 import numpy as np
 import scipy.ndimage
-import scipy.misc
-
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
 # Internal modules
-import pyextremelm.builder.metrics as metrics
 import pyextremelm.builder as ELM
 import pyextremelm.builder.layers as ELMLayers
 
-__version__ = ""
+__version__ = "0.1"
 
-n_neurons = 10
 image_center = int(1920 / 2)
-
+n_neurons = 20
 
 def split_image(image, parts, part_nr=None):
     width = [int(image.shape[0] / parts), int(image.shape[1] / parts)]
@@ -65,39 +61,34 @@ def split_image(image, parts, part_nr=None):
         samples = np.reshape(mini_image, (1, w * h))
     return samples, (w, h)
 
+trainig_samples = None
+for j in range(1, 5):
+    img = scipy.misc.imread(u'images/Image_Wkm_Aktuell_{0:d}.jpg'.format(j),
+                            flatten=True, mode="RGB")
+    data = np.asarray(img, dtype='float64')/256
+    data = data[480:1480, 480:1480]
+    data = data - data.mean(axis=(0,1))
+    S = data.std(axis=(0,1))
+    data = data / (S + 0.02)
+    samples, size = split_image(data, 20)
+    if trainig_samples is None:
+        trainig_samples = samples
+    else:
+        trainig_samples = np.concatenate((trainig_samples, samples))
 
-original_image = scipy.ndimage.imread(u'Image_Wkm_Aktuell_3.jpg', flatten=True,
-                                      mode="RGB")
-original_image = original_image - scipy.ndimage.uniform_filter(
-    original_image, size=(100, 100), mode="constant")
-original_image = original_image[480:1480, 480:1480]
+elmae = ELM.ExtremeLearningMachine()
+elmae.add_layer(ELMLayers.ELMAE(n_neurons, activation="sigmoid", C=0.1))
+elmae.fit(trainig_samples, None)
 
-samples, size = split_image(original_image, 10)
 
-elmae = ELM.ExtremeLearningMachine(metrics.MeanSquaredError, 1)
-# elmae.add_existing_layer(ELMLayers.ELMAE(n_images, C=10E10))
-elmae.add_existing_layer(ELMLayers.ELMSparseAE(n_neurons, C=1))
-elmae.add_existing_layer(ELMLayers.ELMAE(n_neurons, C=10E10))
-
-elmae.fit(samples, None)
-# print(elmae.layers[0].weights)
-# output = elmae.predict(split_image(original_image, 50, 1)[0])
-# print(output.shape)
-# output = output.reshape((size[0], size[1], 10))
-#print(split_image(original_image, 50, 1)[0].shape)
-output = elmae.layers[0].weights["input"].reshape((size[0], size[1],n_neurons))
-#output = split_image(original_image, 50, 1)[0].dot(output)
-#print(output.shape)
-
-print(np.var(original_image))
-fig = plt.figure()
-gs = gridspec.GridSpec(4, 5)
-ax = plt.subplot(gs[:2, :])
-# plt.imshow(original_image)
-plt.imshow(original_image)
-for i in range(output.shape[2]):
-    ax = plt.subplot(gs[int(i / 5) - 2, i % 5])
-    plt.imshow(output[:, :, i], interpolation="nearest")
-    print(np.var(output[:, :, i]))
-plt.tight_layout()
+weights = elmae.layers[0].weights["input"].reshape((size[0], size[1],n_neurons))
+for i in range(0, weights.shape[2]):
+    weights[:,:,i] /= np.sqrt(np.sum(np.power(weights[:,:,i], 2)))
+rows = int(np.ceil(weights.shape[2]/5))
+fig = plt.figure(0)
+fig.suptitle("Maximum activation for the first ae layer")
+gs = gridspec.GridSpec(rows, 5)
+for i in range(weights.shape[2]):
+    ax = plt.subplot(gs[int(i / 5) - rows, i % 5])
+    plt.imshow(weights[:, :, i], interpolation="nearest", cmap='gray')
 plt.show()

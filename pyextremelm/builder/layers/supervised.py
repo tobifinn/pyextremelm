@@ -42,10 +42,9 @@ class ELMRidge(ELMLayer):
 
     def __str__(self):
         s = "{0:s}(neurons: {1:d}, activation: {2:s}, bias: {3:s}, " \
-            "C: {4:s}, weighted: {5:s})".format(
+            "C: {4:s})".format(
             self.__class__.__name__, self.n_neurons,
-            str(type(self.activation_funct).__name__), str(self.bias), str(self.__C),
-            str(self.weighted))
+            str(type(self.activation_funct).__name__), str(self.bias), str(self.__C))
         return s
 
     def update(self, X, y):
