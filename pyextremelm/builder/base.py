@@ -198,29 +198,6 @@ class ELMLayer(ELMBase):
         return input_dict
 
     @staticmethod
-    def get_activation(funct="sigmoid"):
-        """
-        Function to get the activation function
-        Args:
-            funct (str or function):
-
-        Returns:
-            function: The activation function
-        """
-        if isinstance(funct, str) and funct in named_activations:
-            return named_activations[funct]
-        elif funct is None:
-            return named_activations["linear"]
-        elif funct in list(named_activations.values()):
-            return funct
-        elif funct in unnamed_activations:
-            return funct
-        else:
-            raise ValueError(
-                "%s isn't implemented yet or isn't an available function name"
-                % funct)
-
-    @staticmethod
     def get_dim(X):
         """
         Get the dimensions of X.
