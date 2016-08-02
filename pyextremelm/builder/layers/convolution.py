@@ -240,7 +240,7 @@ class ELMPool(BaseConv):
             Default is None, because in some layers there is no activation.
     """
     def __init__(self, pooling="max", ignore_border=False,
-                 spatial_extent=(2, 2), stride=None, zero_padding=(0, 0),
+                 spatial_extent=(2, 2), stride=None, zero_padding=(0,0),
                  activation=None):
         """
         Args:
@@ -254,19 +254,32 @@ class ELMPool(BaseConv):
                 Default is a linear activation.
         """
         self.activations = named_activations
+        if (not hasattr(zero_padding, '__iter__')) and (not zero_padding is None)\
+                and (zero_padding=='same'):
+            zero_padding = (zero_padding, zero_padding)
         super().__init__(1, spatial_extent, stride, zero_padding, activation)
         self.pooling = pooling
         self.ignore_border = ignore_border
 
     def _generate_conv(self):
         input = T.tensor4(name='input')
-        conv_out = Pool.pool_2d(
-            input,
-            ds=(self.spatial_extent[0], self.spatial_extent[1]),
-            ignore_border=self.ignore_border,
-            mode=self.pooling,
-            padding=self.zero_padding,
-            st=None if self.stride is None else (self.stride, self.stride))
+        if self.pooling == 'squareroot':
+            conv_out = Pool.pool_2d(
+                T.power(input,2),
+                ds=(self.spatial_extent[0], self.spatial_extent[1]),
+                ignore_border=self.ignore_border,
+                mode='sum',
+                padding=self.zero_padding,
+                st=None if self.stride is None else (self.stride, self.stride))
+            conv_out = T.sqrt(conv_out)
+        else:
+            conv_out = Pool.pool_2d(
+                input,
+                ds=(self.spatial_extent[0], self.spatial_extent[1]),
+                ignore_border=self.ignore_border,
+                mode=self.pooling,
+                padding=self.zero_padding,
+                st=None if self.stride is None else (self.stride, self.stride))
         if self.activation_funct is None:
             output = conv_out
         else:
@@ -313,7 +326,7 @@ class ELMConvAE_linear(ELMLRF):
         self.img2neib = theano.function([input], output)
 
     def _add_pad(self, X):
-        if self.zero_padding>0:
+        if isinstance(self.zero_padding, int) and (self.zero_padding>0):
             layer = PadLayer(self.zero_padding)
             return layer.fit(X)
         else:
