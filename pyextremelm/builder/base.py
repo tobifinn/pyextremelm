@@ -21,54 +21,29 @@ Created for pyextremelm
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 # System modules
-import abc
-from copy import deepcopy
-from time import time
+import time
+
 
 # External modules
-import numpy as np
 
 # Internal modules
-from .activations import named_activations, unnamed_activations
 
-__version__ = "0.1"
-
-
-class ELMBase(object):
+class ExtremeLearningMachine(object):
     """
-    The base class for every elm component in this layered approach.
-    """
-    __metaclass__ = abc.ABCMeta
-
-    @abc.abstractmethod
-    def __init__(self):
-        pass
-
-    @abc.abstractmethod
-    def fit(self, X, y=None):
-        pass
-
-    @abc.abstractmethod
-    def predict(self, X):
-        pass
-
-    @abc.abstractmethod
-    def update(self, X, y=None):
-        pass
-
-
-class ExtremeLearningMachine(ELMBase):
-    """
-    This class is a container for the layers of the extreme learning machine.
-
-    Attributes:
-        layers (List[ELMLayer]):
-            The list with the added layers for the extreme learning machine.
+    This class is a container for the layers for a neural network based on the
+    extreme learning machine [1].
+    ---------------------------------------------------------------------------
+    [1] Huang, G. B., Zhu, Q. Y., & Siew, C. K. (2006).
+        Extreme learning machine: theory and applications. Neurocomputing,
+        70(1), 489-501.
     """
 
     def __init__(self):
         self.layers = []
-        # self.loss = ELMMetric(loss)
+        self._timer = None
+
+    def _set_timer(self):
+        self._timer = time.time()
 
     def add_layer(self, layer):
         """
@@ -84,7 +59,7 @@ class ExtremeLearningMachine(ELMBase):
 
     def fit(self, X, y=None):
         """
-        This method trains the elm for supervised and unsupervised training.
+        This method trains the nn for supervised and unsupervised training.
         Args:
             X (numpy array): The input data field.
             y (optional[numpy array]): The output data field.
@@ -99,19 +74,17 @@ class ExtremeLearningMachine(ELMBase):
                     network in seconds.
                 training_output (numpy array): The forecasted output for the
                     training dataset. Could be used for further network steps.
-
         """
         training_info = {"samples": None, "loss": None, "train_time": None,
                          "output": None}
-        t0 = time()
+        self._set_timer()
         training_info["samples"] = X.shape[0]
         output = X
         for layer in self.layers:
             input = output
             output = layer.fit(input, y)
-        # self.loss(y, loss)
         training_info['output'] = output
-        training_info['train_time'] = time() - t0
+        training_info['train_time'] = time.time() - self._timer
         return training_info
 
     def predict(self, X):
@@ -131,80 +104,78 @@ class ExtremeLearningMachine(ELMBase):
             prediction = layer.predict(input)
         return prediction
 
-    def update(self, X, y=None):
+    def fit_batch(self, X, y=None):
+        """
+        Method to fit the neural network in a batchwise manner.
+        Args:
+            X (numpy array): The input data field.
+            y (optional[numpy array]): The output data field.
+                In unsupervised learning this is only for consistency.
+
+        Returns:
+
+        """
         pass
 
+    def update(self, X, y=None, decay=1):
+        """
+        Method to update the neural network.
+        Args:
+            X (numpy array): The input data field.
+            y (optional[numpy array]): The output data field.
+                In unsupervised learning this is only for consistency.
+            decay_factor (optional[float]): The decay factor for the update.
+                It can be seen like the learning rate of the update. Values
+                greater than 1 are leading to a decay of older fits. So this
+                factor could be used, to update the NN wth in a time decaying
+                system. Default is 1, so every update step is weighted equally,
+                without any decaying.
+        Returns:
+            update_info (dict): A dict with update information.
+                samples (integer): How many samples are used for the update.
+                loss (float): An error approximation for the training dataset,
+                    for the given loss function of the network.
+                train_time (float): The update duration for the whole
+                    network in seconds.
+                training_output (numpy array): The forecasted output for the
+                    update dataset. Could be used for further network steps.
+        """
+        update_info = {"samples": None, "loss": None, "train_time": None,
+                         "output": None}
+        self._set_timer()
+        update_info["samples"] = X.shape[0]
+        output = X
+        for layer in self.layers:
+            input = output
+            output = layer.update(input, y, decay)
+        update_info['output'] = output
+        update_info['train_time'] = time.time() - self._timer
+        return update_info
+
     def print_network_structure(self):
+        """
+        Print the network structure as formatted string with information about
+        the different layers.
+        Returns:
+            structure (str): The formatted network structure.
+        """
         s = [str(l) for l in self.layers]
         s = '\n'.join(s)
         return '\033[1m' + 'Network structure\n' + '\033[0m' + s
 
 
-class ELMLayer(ELMBase):
+class ELMClustering(object):
     """
-    The ELMLayer represents one layer within the extreme learning machine,
-
-    Attributes:
-        n_neurons (int): Number of neurons within the layer.
-        train_algorithm (Child of ELMTraining): Training method of the layer.
-        activation_funct (str or numpy function):
-            The function with which the values should be activated,
-            Default is None, because in some layers there is no activation.
+    This class is a container for layers of the extreme learning machine, so
+    that the extreme learning machine could be used to cluster the data with a
+    method proposed by Duan et al., 2016 [1]. With this method the data is
+    clustered in a manner like the k-means algorithm. The idea is that the ELM
+    classification algorithm could be used to classify the data in an
+    unsupervised way.
+    ---------------------------------------------------------------------------
+    [1] Duan, L., Yuan, B., Cui, S., Miao, J., & Zhu, W. (2016).
+        KELMC: An Improved K-Means Clustering Method Using Extreme Learning
+        Machine. In Proceedings of ELM-2015 Volume 2 (pp. 273-283). Springer
+        International Publishing.
     """
-
-    def __init__(self, n_neurons, activation="linear",
-                 bias=False):
-        """
-        Args:
-            n_neurons (int): Number of neurons within the layer.
-            activation_funct (optional[str or activation function]):
-                The function with which the values should be activated,
-                Default is a linear activation.
-            bias (bool): If the layer should have a bias. Default is False.
-        """
-        self.n_neurons = n_neurons
-        self.weights = {"input": None, "bias": None}
-        self.activation_funct = self.get_activation(activation)
-        self.bias = bias
-
-    def __str__(self):
-        s = "{0:s}(neurons: {1:d}, activation: {2:s}, bias: {3:s})".format(
-            self.__class__.__name__, self.n_neurons,
-            str(type(self.activation_funct).__name__), str(self.bias))
-        return s
-
-    @abc.abstractmethod
-    def train_algorithm(self, X, y):
-        pass
-
-    def fit(self, X, y=None):
-        self.weights = self.train_algorithm(X, y)
-        X = self.add_bias(X)
-        self.activation_funct = self.activation_funct(self.weights)
-        return self.activation_funct.activate(X)
-
-    def predict(self, X, **kwargs):
-        X = self.add_bias(X)
-        return self.activation_funct.activate(X)
-
-    def update(self, X, y=None, decay=1):
-        pass
-
-    def add_bias(self, X):
-        if self.bias:
-            input_dict = {"input": X, "bias": np.ones(X.shape[0])}
-        else:
-            input_dict = {"input": X, "bias": None}
-        return input_dict
-
-    @staticmethod
-    def get_dim(X):
-        """
-        Get the dimensions of X.
-        Args:
-            X (numpy array): X is the input array (shape: samples*dimensions).
-
-        Returns:
-            dimensions (int): The dimensions of X.
-        """
-        return X.shape[1] if len(X.shape) > 1 else 1
+    pass

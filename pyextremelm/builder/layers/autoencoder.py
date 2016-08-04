@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on 16.06.16
+Created on 02.08.16
 
 Created for pyextremelm
 
@@ -26,6 +26,3 @@ Created for pyextremelm
 # External modules
 
 # Internal modules
-
-
-__version__ = ""

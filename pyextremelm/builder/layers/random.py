@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on 20.05.16
+Created on 02.08.16
 
 Created for pyextremelm
 
@@ -25,17 +25,21 @@ Created for pyextremelm
 
 # External modules
 import numpy as np
-import scipy
 
 # Internal modules
-from ..base import ELMLayer
-
-__version__ = "0.1"
+from .base import ELMLayer
 
 
 class ELMRandom(ELMLayer):
-    def __init__(self, n_neurons, activation="sigmoid", bias=True, rng=None):
-        super().__init__(n_neurons, activation, bias)
+    """
+    This layer represents a random layer within the neural network
+    """
+    def __init__(self, n_features, activation="sigmoid", ortho=False,
+                 bias=True, rng=None):
+        super().__init__(bias)
+        self.n_features = n_features
+        self.activation = activation
+        self.ortho = ortho
         self.rng = rng
         if self.rng is None:
            self.rng = np.random.RandomState(42)
@@ -48,22 +52,35 @@ class ELMRandom(ELMLayer):
             weights["bias"] = self.rng.randn(1, self.n_neurons)
         return weights
 
+    def fit(self, X, y=None):
+        self.weights = self.train_algorithm(X, y)
+        X = self.add_bias(X)
+        self.activation_funct = self.activation_funct(self.weights)
+        return self.activation_funct.activate(X)
 
-class ELMOrthoRandom(ELMLayer):
-    def __init__(self, n_neurons, activation="sigmoid", bias=True, rng=None):
-        super().__init__(n_neurons, activation, bias)
-        self.rng = rng
-        if self.rng is None:
-           self.rng = np.random.RandomState(42)
+    def predict(self, X, **kwargs):
+        X = self.add_bias(X)
+        return self.activation_funct.activate(X)
 
-    def train_algorithm(self, X, y):
-        weights = {"input": None, "bias": None}
-        input_weights = self.rng.randn(self.get_dim(X), self.n_neurons)
-        if self.get_dim(X) > self.n_neurons:
-            weights["input"] = scipy.linalg.orth(input_weights)
-        else:
-            weights["input"] = scipy.linalg.orth(input_weights.T).T
+    def update(self, X, y=None, decay=1):
+        return self.predict(X)
+
+    def add_bias(self, X):
         if self.bias:
-            weights["bias"] = np.linalg.qr(self.rng.randn(1, self.n_neurons).T
-                                           )[0].T
-        return weights
+            input_dict = {"input": X, "bias": np.ones(X.shape[0])}
+        else:
+            input_dict = {"input": X, "bias": None}
+        return input_dict
+
+    @staticmethod
+    def get_dim(X):
+        """
+        Get the dimensions of X.
+        Args:
+            X (numpy array): X is the input array (shape: samples*dimensions).
+
+        Returns:
+            dimensions (int): The dimensions of X.
+        """
+        return X.shape[1] if len(X.shape) > 1 else 1
+
