@@ -1,6 +1,7 @@
+
 # -*- coding: utf-8 -*-
 """
-Created on 02.08.16
+Created on 04.08.16
 
 Created for pyextremelm
 
@@ -26,19 +27,3 @@ Created for pyextremelm
 # External modules
 
 # Internal modules
-from .base import ELMLayer
-
-
-class ELMRidge(ELMLayer):
-    def __init__(self, C=0):
-        super().__init__(n_features=None, activation='linear', bias=False)
-        self.C = C
-        self.hidden_matrices = {'K': None, 'A': None}
-
-    def __str__(self):
-        s = super().__str__()
-        s += "L2-constrain: {0:s})".format(str(self.__C))
-        return s
-
-    def fit(self, X, y=None):
-

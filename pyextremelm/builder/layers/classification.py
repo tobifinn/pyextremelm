@@ -22,6 +22,7 @@ Created for pyextremelm
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 # System modules
+import abc
 
 # External modules
 import numpy as np
@@ -31,6 +32,11 @@ import numpy as np
 
 class ELMClass(object):
     def __init__(self, labels=[]):
+        """
+        Layer class to convert the regression into a classification.
+        Args:
+            labels:
+        """
         self.labels = labels
 
     def __str__(self):
@@ -68,7 +74,25 @@ class ELMClass(object):
         label, probs, X = self.predict(X)
         return probs, label, X
 
+    @abc.abstractmethod
+    def predict(self, X):
+        pass
+
+
+class ELMMultiClass(ELMClass):
+    def predict(self, X):
+        label = X.argmax(axis=1)
+        return label, X
+
+
+class ELMSoftMax(ELMClass):
     def predict(self, X):
         probs = (np.exp(X).T / np.sum(np.exp(X), axis=1)).T
         label = np.array([self.labels[l] for l in probs.argmax(axis=1)])
         return label, probs, X
+
+
+class ELMSingleClass(ELMClass):
+    def predict(self, X):
+        label = X>0
+        return label, X

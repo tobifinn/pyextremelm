@@ -27,11 +27,8 @@ Created for pyextremelm
 
 # Internal modules
 from .random import *
-from .supervised import *
-from .unsupervised import *
 
 __version__ = "0.1"
 
 
-__all__ = ["ELMRandom", 'ELMOrthoRandom', "ELMAE", "ELMRidge", "ELMLasso",
-           "ELMSparseAE", 'ELMClass']
+__all__ = ["ELMRandom"]

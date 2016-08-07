@@ -30,4 +30,4 @@ from .base import *
 __version__ = "0.1"
 
 
-__all__ = ["ExtremeLearningMachine", "ELMLayer", "ELMTraining"]
+__all__ = ["ExtremeLearningMachine"]

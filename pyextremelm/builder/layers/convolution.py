@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on 02.08.16
+Created on 07.08.16
 
 Created for pyextremelm
 
@@ -26,24 +26,3 @@ Created for pyextremelm
 # External modules
 
 # Internal modules
-
-
-__version__ = ""
-
-
-class DenseMixin(object):
-    def algorithm(self, H, w):
-        pass
-
-
-class ConvMixin(object):
-    def __init__(self, spatial, stride, padding):
-        self.spatial = spatial
-        self.stride = stride
-        self.padding = padding
-
-    def algorithm(self, H, w):
-        pass
-
-    def build_conv(self):
-        pass
