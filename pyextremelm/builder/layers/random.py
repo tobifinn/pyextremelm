@@ -25,9 +25,11 @@ Created for pyextremelm
 
 # External modules
 import numpy as np
+import scipy
 
 # Internal modules
 from .base import ELMLayer
+from ..activations.dense import named_activations, unnamed_activations
 
 
 class ELMRandom(ELMLayer):
@@ -38,24 +40,46 @@ class ELMRandom(ELMLayer):
                  bias=True, rng=None):
         super().__init__(bias)
         self.n_features = n_features
-        self.activation = activation
         self.ortho = ortho
         self.rng = rng
         if self.rng is None:
            self.rng = np.random.RandomState(42)
+        self.activation_funct = self.get_activation(activation)
+        if str(type(self.activation_funct).__name__) == 'type':
+            self.activation_funct = self.activation_funct()
 
-    def train_algorithm(self, X, y):
+    def __str__(self):
+        s = "{0:s}(neurons: {1:d}, activation: {2:s}, bias: {3:s}, " \
+            "orthogonalized: {4:s})".format(
+            self.__class__.__name__, self.n_features,
+            str(type(self.activation_funct).__name__), str(self.bias),
+            str(self.ortho))
+        return s
+
+
+    def train_algorithm(self, X, y=None):
         weights = {
-            "input": self.rng.randn(self.get_dim(X), self.n_neurons),
+            "input": self.rng.randn(self.get_dim(X), self.n_features),
             "bias": None}
         if self.bias:
-            weights["bias"] = self.rng.randn(1, self.n_neurons)
+            weights["bias"] = self.rng.randn(1, self.n_features)
+        if self.ortho:
+            if self.get_dim(X) > self.n_features:
+                weights["input"] = scipy.linalg.orth(weights["input"])
+            else:
+                weights["input"] = scipy.linalg.orth(weights["input"].T).T
+            if self.bias:
+                weights["bias"] = np.linalg.qr(weights["bias"].T)[0].T
         return weights
 
     def fit(self, X, y=None):
         self.weights = self.train_algorithm(X, y)
         X = self.add_bias(X)
-        self.activation_funct = self.activation_funct(self.weights)
+        try:
+            self.activation_funct.weights = self.weights
+        except Exception as e:
+            raise ValueError('This activation isn\'t implemented yet'
+                  '\n(original exception: {0:s}'.format(e))
         return self.activation_funct.activate(X)
 
     def predict(self, X, **kwargs):
@@ -84,3 +108,19 @@ class ELMRandom(ELMLayer):
         """
         return X.shape[1] if len(X.shape) > 1 else 1
 
+    @staticmethod
+    def get_activation(funct="sigmoid"):
+        """
+        Function to get the activation function
+        Args:
+            funct (str or function):
+
+        Returns:
+            function: The activation function
+        """
+        if isinstance(funct, str) and funct in named_activations:
+            return named_activations[funct]
+        elif funct is None:
+            return named_activations["linear"]
+        else:
+            return funct
