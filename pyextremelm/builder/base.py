@@ -97,7 +97,6 @@ class ExtremeLearningMachine(object):
             prediction (numpy array): The predicted data field.
             prediction_time (float): The prediction duration in seconds.
         """
-        t0 = time()
         prediction = X
         for layer in self.layers:
             input = prediction
@@ -160,8 +159,8 @@ class ExtremeLearningMachine(object):
             structure (str): The formatted network structure.
         """
         s = [str(l) for l in self.layers]
-        s = '\n'.join(s)
-        return '\033[1m' + 'Network structure\n' + '\033[0m' + s
+        s = '\n\t'.join(s)
+        return '\033[1m' + 'Network structure\n' + '\033[0m\t' + s
 
 
 class ELMClustering(object):

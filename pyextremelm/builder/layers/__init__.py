@@ -26,9 +26,10 @@ Created for pyextremelm
 # External modules
 
 # Internal modules
+from .autoencoder import *
 from .random import *
+from .regression import *
+from .classification import *
 
-__version__ = "0.1"
 
-
-__all__ = ["ELMRandom"]
+__all__ = ["ELMRandom", "ELMRidge", "ELMNaive", "ELMSoftMax", 'ELMAE']

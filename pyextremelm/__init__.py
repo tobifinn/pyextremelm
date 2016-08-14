@@ -28,4 +28,4 @@ Created for pyextremelm
 # Internal modules
 from .preconfigured import *
 
-__version__ = "0.1"
+__all__ = ['ELMRegressor', 'ELMClassifier']

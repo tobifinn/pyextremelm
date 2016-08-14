@@ -27,7 +27,4 @@ Created for pyextremelm
 # Internal modules
 from .base import *
 
-__version__ = "0.1"
-
-
 __all__ = ["ExtremeLearningMachine"]

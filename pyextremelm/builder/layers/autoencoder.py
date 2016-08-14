@@ -26,3 +26,55 @@ Created for pyextremelm
 # External modules
 
 # Internal modules
+from .base import ELMLayer
+from .random import ELMRandom
+from .regression import ELMNaive, ELMRidge
+
+
+class ELMAE(ELMLayer):
+    def __init__(self, n_features, activation="sigmoid", bias=True, C=0,
+                 ortho=True, rng=None):
+        super().__init__(n_features, activation, bias)
+        self._C = C
+        self.ortho = ortho
+        self.layers = [ELMRandom(n_features, activation, bias, ortho, rng)]
+        if self._C>0:
+            self.layers.append(ELMRidge(C))
+        else:
+            self.layers.append(ELMNaive())
+
+    def __str__(self):
+        s = "{0:s}, orthogonalized: {1:s}, L2-constrain: {2:f})".format(
+            super().__str__()[:-1], str(self.ortho), self._C)
+        return s
+
+    def train_algorithm(self, X, decay=False):
+        layer_input = X
+        for layer in self.layers:
+            if not isinstance(decay, bool):
+                layer_input = layer.update(layer_input, X, decay)
+            else:
+                layer_input = layer.fit(layer_input, X)
+        weights = self.layers[-1].weights
+        if len(weights["input"].shape)<2:
+            weights["input"] = weights["input"].reshape(-1, 1)
+        weights["input"] = weights["input"].T
+        return weights
+
+    def fit(self, X, y=None):
+        self.weights = self.train_algorithm(X)
+        try:
+            self.activation_fct.weights = self.weights
+        except Exception as e:
+            raise ValueError('This activation isn\'t implemented yet'
+                             '\n(original exception: {0:s})'.format(e))
+        return self.predict(X)
+
+    def update(self, X, y=None, decay=1):
+        self.weights = self.train_algorithm(X, decay)
+        try:
+            self.activation_fct.weights = self.weights
+        except Exception as e:
+            raise ValueError('This activation isn\'t implemented yet'
+                             '\n(original exception: {0:s})'.format(e))
+        return self.predict(X)

@@ -36,18 +36,15 @@ from pyextremelm.builder import ExtremeLearningMachine
 from pyextremelm.builder import layers as ELMLayers
 
 
-
-
-__version__ = "0.1"
-
-
 def x_trans(x):
     return (np.sin(np.sum(x, axis=1))>0).astype(int)
 
 x_dimensions = 5
 train_size = 10000
 test_size = 1000
-hidden_neurons = 10
+hidden_neurons = 50
+
+classifier = ELMLayers.ELMSoftMax()
 
 
 x_train_size = (train_size, x_dimensions)
@@ -56,6 +53,7 @@ x_test_size = (test_size, x_dimensions)
 
 train_x = np.random.normal(0, 1, size=x_train_size)
 train_y = x_trans(train_x+np.random.normal(0, 0.1, size=x_train_size))
+train_y = classifier.labels_bin(train_y)
 train_x_scaler = StandardScaler()
 train_x = train_x_scaler.fit_transform(train_x)
 
@@ -64,11 +62,18 @@ test_y = x_trans(test_x)
 test_x = train_x_scaler.transform(test_x)
 
 
-elm = ELMClassifier(hidden_neurons, C=1)
+elm = ELMClassifier(hidden_neurons, C=2E5)
+
+elmae = ExtremeLearningMachine()
+elmae.add_layer(ELMLayers.ELMAE(hidden_neurons, C=0))
+elmae.add_layer(ELMLayers.ELMAE(hidden_neurons, C=0))
+elmae.add_layer(ELMLayers.ELMNaive())
+elmae.add_layer(classifier)
 
 
 instances = [
-    elm]
+    elm,
+    elmae]
 
 
 
@@ -80,5 +85,7 @@ for instance in instances:
     prediction, prob, _ = instance.predict(test_x)
     # calculate the forecast performance
     print(instance.print_network_structure())
-    print(brier_score_loss(elm.labels_bin(test_y)[:,1], prob[:,1]))
-    print(time()-t0)
+    print('Brier score: {0:f}'.format(
+        brier_score_loss(elm.labels_bin(test_y)[:,1], prob[:,1])))
+    print('Time elapsed: {0:f}'.format(time()-t0))
+    print(test_y[:20], '\n', prediction[:20])

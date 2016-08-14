@@ -25,6 +25,7 @@ Created for pyextremelm
 import abc
 
 # External modules
+import numpy as np
 
 # Internal modules
 from ..activations import dense as dense_act, convolutional as conv_act
@@ -50,13 +51,13 @@ class ELMLayer(object):
         self.bias = bias
         self.weights = {"input": None, "bias": None}
         self.activation_fct = self.get_activation(activation)
-        if type(self.activation_funct).__name__ == 'type':
+        if type(self.activation_fct).__name__ == 'type':
             self.activation_fct = self.activation_fct()
 
     def __str__(self):
         s = "{0:s}(neurons: {1:d}, activation: {2:s}, bias: {3:s})".format(
             self.__class__.__name__, self.n_features,
-            str(type(self.activation_funct).__name__), str(self.bias))
+            str(type(self.activation_fct).__name__), str(self.bias))
         return s
 
     @abc.abstractmethod
@@ -76,7 +77,6 @@ class ELMLayer(object):
         """
         pass
 
-    @abc.abstractmethod
     def predict(self, X):
         """
         Method to make a prediction with the layer.
@@ -88,7 +88,8 @@ class ELMLayer(object):
                 It will have the form: g(x,A,b), with g the activation
                 function, A the input weights and b the bias weights.
         """
-        pass
+        X = self.add_bias(X)
+        return self.activation_fct.activate(X)
 
     @abc.abstractmethod
     def update(self, X, y=None, decay=1):
@@ -117,6 +118,23 @@ class ELMLayer(object):
         """
         pass
 
+    def add_bias(self, X):
+        """
+        Method to add an intercept column t othe X if the layer should have a
+        bias.
+        Args:
+            X (numpy array): Array to which the intercept column should be
+                added. Input dim is rows x cols.
+
+        Returns:
+
+        """
+        if self.bias:
+            input_dict = {"input": X, "bias": np.ones(X.shape[0])}
+        else:
+            input_dict = {"input": X, "bias": None}
+        return input_dict
+
     @staticmethod
     def get_activation(funct="sigmoid"):
         """
@@ -134,6 +152,18 @@ class ELMLayer(object):
         else:
             return funct
 
+    @staticmethod
+    def get_dim(X):
+        """
+        Get the dimensions of X.
+        Args:
+            X (numpy array): X is the input array (shape: samples*dimensions).
+
+        Returns:
+            dimensions (int): The dimensions of X.
+        """
+        return X.shape[1] if len(X.shape) > 1 else 1
+
 
 class ELMConvLayer(ELMLayer):
     def __init__(self, n_features, spatial=(3,3), stride=(1,1), pad=(1,1),
@@ -142,14 +172,16 @@ class ELMConvLayer(ELMLayer):
         self.spatial = spatial
         self.stride = stride
         self.pad = pad
-        self.conv_funct = None
+        self.conv_fct = None
+        self.filter_shape = None
 
     def __str__(self):
-        s = super().__str__()[:-1]
-        s += ", spatial extent: {0:s}, stride: {1:s}, padding: {2:s})".format(
-            str(self.spatial), str(self.stride), str(self.pad))
+        s = "{0:s}, spatial extent: {1:s}, stride: {2:s}, padding: {3:s})".\
+            format(super().__str__()[:-1], str(self.spatial), str(self.stride),
+                   str(self.pad))
         return s
 
+    @staticmethod
     def get_activation(funct="sigmoid"):
         """
         Function to get the activation function
@@ -172,3 +204,25 @@ class ELMConvLayer(ELMLayer):
         Method to build the convolutional function.
         """
         pass
+
+    @abc.abstractmethod
+    def fit(self, X, y=None):
+        pass
+
+    @abc.abstractmethod
+    def update(self, X, y=None, decay=1):
+        pass
+
+    def predict(self, X):
+        """
+        Method to make a prediction with the layer.
+        Args:
+            X (numpy array): The input data array for the layer.
+
+        Returns:
+            prediction (numpy array): The predicted data array of the layer.
+                It will have the form: g(x,A,b), with g the activation
+                function, A the input weights and b the bias weights.
+        """
+        return self.conv_fct(X)
+

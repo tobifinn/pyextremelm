@@ -24,21 +24,69 @@ Created for pyextremelm
 # System modules
 
 # External modules
+import numpy as np
 
 # Internal modules
 from .base import ELMLayer
 
 
-class ELMRidge(ELMLayer):
-    def __init__(self, C=0):
-        super().__init__(n_features=None, activation='linear', bias=False)
-        self.C = C
-        self.hidden_matrices = {'K': None, 'A': None}
+class ELMNaive(ELMLayer):
+    def __init__(self):
+        super().__init__(n_features=1, activation='linear', bias=False)
+        self.hidden_matrices = {'K': np.empty((0,0)), 'A': np.empty((0,0))}
 
-    def __str__(self):
-        s = super().__str__()
-        s += "L2-constrain: {0:s})".format(str(self.__C))
-        return s
+    def _calc_weights(self):
+        K = self.hidden_matrices['K']
+        A = self.hidden_matrices['A']
+        self.weights['input'] = np.linalg.inv(K).dot(A)
+        self.activation_fct.weights = self.weights
 
     def fit(self, X, y=None):
+        self.n_features=y.shape[1]
+        self.hidden_matrices['K'] = X.T.dot(X)
+        self.hidden_matrices['A'] = X.T.dot(y)
+        self._calc_weights()
+        self.activation_fct.weights = self.weights
+        return self.predict(X)
+
+    def update(self, X, y, decay=1):
+        self.hidden_matrices['K'] += decay.dot(X.T.dot(X))
+        self.hidden_matrices['A'] += decay.dot(X.T.dot(y))
+        self._calc_weights()
+        return self.predict(X)
+
+
+class ELMRidge(ELMLayer):
+    def __init__(self, C=100):
+        super().__init__(n_features=1, activation='linear', bias=False)
+        self._C = C
+        self.hidden_matrices = {'K': np.empty((0,0)), 'A': np.empty((0,0))}
+
+    def __str__(self):
+        s = super().__str__()[:-1]
+        s += ", L2-constrain: {0:s})".format(str(self._C))
+        return s
+
+    def _calc_weights(self):
+        K = self.hidden_matrices['K']
+        A = self.hidden_matrices['A']
+        self.weights['input'] = np.linalg.inv(
+            K+np.eye(K.shape[0])/self._C).dot(A)
+        self.activation_fct.weights = self.weights
+
+    def fit(self, X, y=None):
+        self.n_features=y.shape[1]
+        self.hidden_matrices['K'] = X.T.dot(X)
+        self.hidden_matrices['A'] = X.T.dot(y)
+        self._calc_weights()
+        self.activation_fct.weights = self.weights
+        return self.predict(X)
+
+    def update(self, X, y, decay=1):
+        self.hidden_matrices['K'] += decay.dot(X.T.dot(X))
+        self.hidden_matrices['A'] += decay.dot(X.T.dot(y))
+        self._calc_weights()
+        return self.predict(X)
+
+
 

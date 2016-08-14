@@ -40,9 +40,8 @@ def x_trans(x):
 
 x_dimensions = 1
 train_size = 1000
-test_size = 350
-hidden_neurons = 500
-
+test_size = 1000
+hidden_neurons = 40
 
 x_train_size = (train_size, x_dimensions)
 x_test_size = (test_size, x_dimensions)
@@ -75,9 +74,9 @@ plt.plot(x_range, x_trans(x_range), color="0")
 # ELM with constraint
 elm = ELMRegressor(hidden_neurons, C=2E5)
 # # ELM without constraint
-elmn = ELMRegressor(hidden_neurons, C=0)
+elmn = ELMRegressor(hidden_neurons)
 # # ELM with constraint and a fourier activation
-elmf = ELMRegressor(hidden_neurons, activation="fourier", C=2E5)
+elmf = ELMRegressor(20, activation="fourier", C=2E5)
 
 
 instances = {

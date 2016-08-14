@@ -44,8 +44,8 @@ class ELMRandom(ELMLayer):
            self.rng = np.random.RandomState(42)
 
     def __str__(self):
-        s = super().__str__()[:-1]
-        s += ", orthogonalized: {0:s})".format(str(self.ortho))
+        s = "{0:s}, orthogonalized: {1:s})".format(
+            super().__str__()[:-1], str(self.ortho))
         return s
 
     def train_algorithm(self, X, y=None):
@@ -65,36 +65,12 @@ class ELMRandom(ELMLayer):
 
     def fit(self, X, y=None):
         self.weights = self.train_algorithm(X, y)
-        X = self.add_bias(X)
         try:
-            self.activation_funct.weights = self.weights
+            self.activation_fct.weights = self.weights
         except Exception as e:
             raise ValueError('This activation isn\'t implemented yet'
                   '\n(original exception: {0:s})'.format(e))
-        return self.activation_funct.activate(X)
-
-    def predict(self, X, **kwargs):
-        X = self.add_bias(X)
-        return self.activation_funct.activate(X)
+        return self.predict(X)
 
     def update(self, X, y=None, decay=1):
         return self.predict(X)
-
-    def add_bias(self, X):
-        if self.bias:
-            input_dict = {"input": X, "bias": np.ones(X.shape[0])}
-        else:
-            input_dict = {"input": X, "bias": None}
-        return input_dict
-
-    @staticmethod
-    def get_dim(X):
-        """
-        Get the dimensions of X.
-        Args:
-            X (numpy array): X is the input array (shape: samples*dimensions).
-
-        Returns:
-            dimensions (int): The dimensions of X.
-        """
-        return X.shape[1] if len(X.shape) > 1 else 1

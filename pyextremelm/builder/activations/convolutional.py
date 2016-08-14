@@ -25,5 +25,18 @@ Created for pyextremelm
 # System modules
 
 # External modules
+import theano.tensor as T
 
 # Internal modules
+
+
+named_activations = {
+    "sigmoid": T.nnet.sigmoid,
+    "hardsig": T.nnet.hard_sigmoid,
+    "tanh": T.tanh,
+    "fourier": T.cos,
+    "relu": T.nnet.relu,
+    "elu": T.nnet.elu,
+    "linear": None
+}
+
