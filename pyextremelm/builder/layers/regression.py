@@ -75,7 +75,7 @@ class ELMRidge(ELMLayer):
         self.activation_fct.weights = self.weights
 
     def fit(self, X, y=None):
-        self.n_features=y.shape[1]
+        self.n_features=y.shape[1] if len(y.shape) > 1 else 1
         self.hidden_matrices['K'] = X.T.dot(X)
         self.hidden_matrices['A'] = X.T.dot(y)
         self._calc_weights()
@@ -83,8 +83,8 @@ class ELMRidge(ELMLayer):
         return self.predict(X)
 
     def update(self, X, y, decay=1):
-        self.hidden_matrices['K'] += decay.dot(X.T.dot(X))
-        self.hidden_matrices['A'] += decay.dot(X.T.dot(y))
+        self.hidden_matrices['K'] += X.T.dot(X)
+        self.hidden_matrices['A'] += X.T.dot(y)
         self._calc_weights()
         return self.predict(X)
 

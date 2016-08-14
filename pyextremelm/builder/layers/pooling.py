@@ -48,7 +48,7 @@ class ELMPool(ELMConvLayer):
             Default is None, because in some layers there is no activation.
     """
     def __init__(self, pooling="max",
-                 spatial_extent=(2, 2), stride=None, pad=(0,0),
+                 spatial=(2, 2), stride=None, pad=(0,0),
                  ignore_border=False, activation=None):
         """
         Args:
@@ -64,7 +64,7 @@ class ELMPool(ELMConvLayer):
         if (not hasattr(pad, '__iter__')) and (not pad is None)\
                 and (pad=='same'):
             zero_padding = (pad, pad)
-        super().__init__(1, spatial_extent, stride, pad, activation, False)
+        super().__init__(1, spatial, stride, pad, activation, False)
         self.pooling = pooling
         self.ignore_border = ignore_border
 
@@ -73,24 +73,24 @@ class ELMPool(ELMConvLayer):
         if self.pooling == 'squareroot':
             conv_out = Pool.pool_2d(
                 T.power(input,2),
-                ds=(self.spatial_extent[0], self.spatial_extent[1]),
+                ds=(self.spatial[0], self.spatial[1]),
                 ignore_border=self.ignore_border,
                 mode='sum',
-                padding=self.zero_padding,
+                padding=self.pad,
                 st=None if self.stride is None else (self.stride, self.stride))
             conv_out = T.sqrt(conv_out)
         else:
             conv_out = Pool.pool_2d(
                 input,
-                ds=(self.spatial_extent[0], self.spatial_extent[1]),
+                ds=(self.spatial[0], self.spatial[1]),
                 ignore_border=self.ignore_border,
                 mode=self.pooling,
-                padding=self.zero_padding,
+                padding=self.pad,
                 st=None if self.stride is None else (self.stride, self.stride))
-        if self.activation_funct is None:
+        if self.activation_fct is None:
             output = conv_out
         else:
-            output = self.activation_funct(conv_out)
+            output = self.activation_fct(conv_out)
         self.conv = theano.function([input], output)
 
     def fit(self, X, y=None):

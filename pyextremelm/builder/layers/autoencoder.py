@@ -34,10 +34,14 @@ from .regression import ELMNaive, ELMRidge
 class ELMAE(ELMLayer):
     def __init__(self, n_features, activation="sigmoid", bias=True, C=0,
                  ortho=True, rng=None):
-        super().__init__(n_features, activation, bias)
+        try:
+            super().__init__(n_features, activation[1], bias)
+            self.layers = [ELMRandom(n_features, activation[0], bias, ortho, rng)]
+        except:
+            super().__init__(n_features, activation, bias)
+            self.layers = [ELMRandom(n_features, activation, bias, ortho, rng)]
         self._C = C
         self.ortho = ortho
-        self.layers = [ELMRandom(n_features, activation, bias, ortho, rng)]
         if self._C>0:
             self.layers.append(ELMRidge(C))
         else:
