@@ -37,7 +37,7 @@ __version__ = "0.1"
 
 image_center = int(1920 / 2)
 n_neurons = 20
-constrain = 1
+constrain = 2E12
 
 def split_image(image, parts, part_nr=None):
     width = [int(image.shape[0] / parts), int(image.shape[1] / parts)]

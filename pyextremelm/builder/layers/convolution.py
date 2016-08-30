@@ -22,12 +22,14 @@ Created for pyextremelm
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 # System modules
+import sys
 
 # External modules
 import numpy as np
 import scipy
 
 import theano
+from theano.ifelse import ifelse
 import theano.tensor as T
 
 # Internal modules
@@ -188,19 +190,78 @@ class ELMConvNaive(ELMConvLayer):
         return self.predict(X)
 
     def update(self, X, y=None, decay=1):
-        if self.output_gen is None:
-            input = T.tensor4(name='input')
-            target = T.tensor4(name='target')
-            output = T.nnet.conv2d(input, target,
-                                   border_mode=self.pad,
-                                   subsample=self.stride)
-            self.output_gen = theano.function([input, target], output)
-        self.hidden_matrices['A'] += decay*self.output_gen(
-            y.transpose(1,0,2,3), X.transpose(1,0,2,3))
-        self.hidden_matrices['K'] += decay*np.sum(np.power(X, 2), axis=(0,2,3))
+        self.hidden_matrices['A'] = self.hidden_matrices['A']*decay+\
+            self.output_gen(y.transpose(1,0,2,3), X.transpose(1,0,2,3))
+        self.hidden_matrices['K'] = self.hidden_matrices['K']*decay+\
+                                    np.sum(np.power(X, 2), axis=(0,2,3))
         self._calc_weights()
         self._generate_conv()
         return self.predict(X)
+
+class ELMConvNaive_T(ELMConvLayer):
+    def __init__(self, spatial=(3, 3), stride=(1, 1),
+                 pad=(1, 1), C=0):
+        """
+        The ELMConvNaive represents a convolutional regression layer within
+        an ELM without any constrain. This implementation is based on theano.
+
+        Attributes:
+            spatial_extent (optional[int/tuple[int]]): The spatial extent of
+                the local receptive field in pixels.
+                Size should be (width, height) or an integer, so that the width
+                and height are the same. Default is a 3x3 lrf.
+            stride (optional[int/tuple[int]]):The stride of the local receptive
+                fields in pixels. Size should be (width, height) or an integer,
+                so that the width and height are the same. Default is a stride
+                of 1x1.
+            pad (optional[int/tuple[int]]): The zero-padding of the input layer
+                in pixels. Size should be (width, height) or an integer,
+                so that the width and height are the same. Default is a padding
+                of 1x1.
+        """
+        super().__init__(1, spatial, stride, pad, 'linear', False)
+        self.hidden_matrices = {'K': None, 'A': None}
+        self._C = C
+        self.conv_fct = {'train': None, 'predict': None}
+
+    def fit(self, X, y=None):
+        self.n_features = y.shape[0]
+        self.weights['input'] = theano.shared(value=np.zeros((
+            self.n_features, X.shape[1], self.spatial[0], self.spatial[1]),
+            dtype=theano.config.floatX), name='w', borrow=True)
+        input = T.tensor4(name='input')
+        target = T.tensor4(name='target')
+        decay = T.scalar(name='decay')
+        xy = T.nnet.conv2d(input.transpose(1,0,2,3), target.transpose(1,0,2,3),
+                           border_mode=self.pad, subsample=self.stride)
+        xx = T.sum(T.power(input, 2), axis=(0,2,3))
+        k = ifelse(self.hidden_matrices['input'] is None, )
+
+        lam = theano.shared(value=self._C, name='constrain', borrow=True)
+        prediction = T.nnet.conv2d(input, self.weights['input'],
+                                   border_mode=self.pad,
+                                   subsample=self.stride)
+        weights, _ = theano.scan(
+            fn=lambda a, k, c: a/(k+c), outputs_info=None,
+            sequences=[self.hidden_matrices['A'].transpose(1,0,2,3),
+                       self.hidden_matrices['K']], non_sequences=lam)
+        new_weights = weights.transpose(1,0,2,3)
+        updates = [(self.hidden_matrices['K'],
+                    self.hidden_matrices['K'].dot(decay)+xx),
+                   (self.hidden_matrices['A'],
+                    self.hidden_matrices['A'].dot(decay) + xy),
+                   (self.weights['input'], new_weights)]
+        self.conv_fct['train'] = theano.function([input, target, decay],
+                                                 prediction,
+                                                 updates=updates)
+        self.conv_fct['predict'] = theano.function([input], prediction)
+        return self.conv_fct['train'](X, y, 1)
+
+    def update(self, X, y=None, decay=1):
+        return self.conv_fct['train'](X, y, decay)
+
+    def predict(self, X):
+        return self.conv_fct['predict'](X)
 
 
 class ELMConvRidge(ELMConvNaive):

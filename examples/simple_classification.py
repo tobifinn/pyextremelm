@@ -31,7 +31,6 @@ from sklearn.metrics import brier_score_loss
 
 # Internal modules
 from pyextremelm import ELMClassifier
-from pyextremelm.builder import metrics
 from pyextremelm.builder import ExtremeLearningMachine
 from pyextremelm.builder import layers as ELMLayers
 
@@ -67,7 +66,7 @@ elm = ELMClassifier(hidden_neurons, C=2E5)
 elmae = ExtremeLearningMachine()
 elmae.add_layer(ELMLayers.ELMAE(hidden_neurons, C=0))
 elmae.add_layer(ELMLayers.ELMAE(hidden_neurons, C=0))
-elmae.add_layer(ELMLayers.ELMNaive())
+elmae.add_layer(ELMLayers.ELMRegression())
 elmae.add_layer(classifier)
 
 
@@ -88,4 +87,3 @@ for instance in instances:
     print('Brier score: {0:f}'.format(
         brier_score_loss(elm.labels_bin(test_y)[:,1], prob[:,1])))
     print('Time elapsed: {0:f}'.format(time()-t0))
-    print(test_y[:20], '\n', prediction[:20])

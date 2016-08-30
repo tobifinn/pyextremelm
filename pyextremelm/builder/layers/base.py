@@ -169,6 +169,7 @@ class ELMConvLayer(ELMLayer):
     def __init__(self, n_features, spatial=(3,3), stride=(1,1), pad=(1,1),
                  activation='linear', bias=True):
         super().__init__(n_features, activation, bias)
+        self.activation_fct = self.get_activation(activation)
         self.spatial = spatial
         self.stride = stride
         self.pad = pad
@@ -193,8 +194,6 @@ class ELMConvLayer(ELMLayer):
         """
         if isinstance(funct, str) and funct in conv_act.named_activations:
             return conv_act.named_activations[funct]
-        elif funct is None:
-            return conv_act.named_activations["linear"]
         else:
             return funct
 

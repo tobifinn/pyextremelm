@@ -17,37 +17,31 @@ from sklearn.base import TransformerMixin, BaseEstimator
 
 from pyextremelm.builder import ExtremeLearningMachine
 from pyextremelm.builder.layers.convolution import ELMLRF, ELMConvAE
+from pyextremelm.builder.layers.pooling import ELMPool
+from pyextremelm.builder.layers.util import ELMNormalize
 
 from pyclamster.clustering.kmeans import KMeans
 
 rng = np.random.RandomState(42)
-output_layer = 10
+output_layer = 20
 
 elm = ExtremeLearningMachine()
-
-elm.add_layer(ELMConvAE(output_layer, (7,7), pad=(3,3), C=0, activation='linear', ortho=True, rng=rng))
-#elm.add_layer(ELMLRF(100, (3,3), pad='valid', activation='relu', ortho=True, rng=rng))
-#elm.add_layer(ELMLRF(100, (3,3), pad='valid', activation='relu', ortho=True, rng=rng))
-#elm.add_layer(ELMLRF(2, (3,3), pad='valid', activation='linear', ortho=True, rng=rng))
-# elm.add_layer(ELMPool(pooling='squareroot',
-#                       spatial_extent=(3, 3), stride=1))
-# elm.add_layer(ELMConvAE_linear(2, (3,3), zero_padding='full', activation='linear', C=10))
-# elm.add_layer(ELMPool(pooling='squareroot',
-#                       spatial_extent=(3, 3), stride=1))
-# elm.add_layer(ELMConvAE_linear(80, (3, 3), bias=True, zero_padding='full',
-#                      activation='tanh', C=1))
-# elm.add_layer(ELMPool(pooling='squareroot',
-#                       spatial_extent=(3, 3), stride=1))
-# elm.add_layer(ELMConvAE_linear(output_layer, (3, 3), bias=True, zero_padding='full',
-#                      activation='tanh', C=1))
-# elm.add_layer(ELMPool(pooling='squareroot', spatial_extent=(3, 3),
-#                       stride=1))
-# elm.add_layer(ELMConvAE_linear(2, (1, 1), bias=True, zero_padding='full',
-#                      activation='tanh', C=1))
-# elm.add_layer(ELMPool(pooling='squareroot', spatial_extent=(3, 3),
-#                       stride=1))
-
-
+#elm.add_layer(ELMConvAE(50, (7,7), activation='relu', ortho=True, rng=rng))
+#elm.add_layer(ELMLRF(100, (3,3), pad=(1,1), activation='linear', ortho=False, rng=rng))
+elm.add_layer(ELMLRF(40, (3,3), pad=(0,0), activation='linear', ortho=True, rng=rng))
+elm.add_layer(ELMNormalize())
+elm.add_layer(ELMLRF(60, (3,3), pad=(0,0), activation='linear', ortho=True, rng=rng))
+elm.add_layer(ELMNormalize())
+elm.add_layer(ELMLRF(80, (3,3), pad=(0,0), activation='linear', ortho=True, rng=rng))
+elm.add_layer(ELMPool('squareroot'))
+elm.add_layer(ELMNormalize())
+elm.add_layer(ELMLRF(100, (3,3), pad=(0,0), activation='linear', ortho=True, rng=rng))
+elm.add_layer(ELMNormalize())
+elm.add_layer(ELMLRF(120, (3,3), pad=(0,0), activation='linear', ortho=True, rng=rng))
+elm.add_layer(ELMNormalize())
+elm.add_layer(ELMLRF(140, (3,3), pad=(0,0), activation='linear', ortho=True, rng=rng))
+elm.add_layer(ELMNormalize())
+elm.add_layer(ELMLRF(20, (3,3), pad=(0,0), activation='linear', ortho=True, rng=rng))
 images = None
 for j in range(1, 5):
     img = scipy.misc.imread('images/Image_Wkm_Aktuell_{0:d}.jpg'.format(j),
@@ -68,17 +62,31 @@ img_ = images.transpose(0, 3, 1, 2)
 
 filtered_img = elm.fit(img_)['output']
 
-print(elm.layers[-1].weights['input'])
 
 filtered_img_ = filtered_img.reshape((-1, output_layer))
 filtered_img_ = filtered_img_ - filtered_img_.mean(axis=0)
 filtered_img_ = filtered_img_/(filtered_img_.std(axis=0)+0.000001)
-ax = plt.subplot()
-plt.hist2d(filtered_img_[:,0], filtered_img_[:,1], bins=1000, normed=LogNorm)
-ax.set_xlim(-2, 2)
-ax.set_ylim(-2, 2)
-plt.colorbar()
-plt.show()
+try:
+    w = int(np.sqrt(output_layer))
+    h = int(np.ceil((output_layer)/w))
+    for i in range(output_layer):
+        plt.subplot(h, w, i + 1)
+        beta = elm.layers[-1].weights['input'][i,:,:,:]
+        plt.hist(beta.reshape((-1)))
+    plt.tight_layout()
+    plt.show()
+except Exception as e:
+    print(e)
+try:
+    w = int(np.sqrt(output_layer))
+    h = int(np.ceil((output_layer)/w))
+    for i in range(output_layer):
+        plt.subplot(h, w, i + 1)
+        plt.axis('off')
+        plt.imshow(np.mean(elm.layers[-1].weights['input'][i,:,:,:], axis=0), interpolation='none', cmap='gray')
+    plt.show()
+except Exception as e:
+    print(e)
 
 
 # plot original image and first and second components of output

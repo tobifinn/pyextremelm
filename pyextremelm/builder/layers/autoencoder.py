@@ -28,24 +28,17 @@ Created for pyextremelm
 # Internal modules
 from .base import ELMLayer
 from .random import ELMRandom
-from .regression import ELMNaive, ELMRidge
+from .regression import ELMRegression
 
 
 class ELMAE(ELMLayer):
     def __init__(self, n_features, activation="sigmoid", bias=True, C=0,
                  ortho=True, rng=None):
-        try:
-            super().__init__(n_features, activation[1], bias)
-            self.layers = [ELMRandom(n_features, activation[0], bias, ortho, rng)]
-        except:
-            super().__init__(n_features, activation, bias)
-            self.layers = [ELMRandom(n_features, activation, bias, ortho, rng)]
+        super().__init__(n_features, activation, bias)
+        self.layers = [ELMRandom(n_features, activation, bias, ortho, rng),
+                       ELMRegression(C)]
         self._C = C
         self.ortho = ortho
-        if self._C>0:
-            self.layers.append(ELMRidge(C))
-        else:
-            self.layers.append(ELMNaive())
 
     def __str__(self):
         s = "{0:s}, orthogonalized: {1:s}, L2-constrain: {2:f})".format(
@@ -62,11 +55,11 @@ class ELMAE(ELMLayer):
         weights = self.layers[-1].weights
         if len(weights["input"].shape)<2:
             weights["input"] = weights["input"].reshape(-1, 1)
-        weights["input"] = weights["input"].T
         return weights
 
     def fit(self, X, y=None):
         self.weights = self.train_algorithm(X)
+        self.weights['input'] = self.weights['input'].T
         try:
             self.activation_fct.weights = self.weights
         except Exception as e:
@@ -76,6 +69,7 @@ class ELMAE(ELMLayer):
 
     def update(self, X, y=None, decay=1):
         self.weights = self.train_algorithm(X, decay)
+        self.weights['input'] = self.weights['input'].T
         try:
             self.activation_fct.weights = self.weights
         except Exception as e:

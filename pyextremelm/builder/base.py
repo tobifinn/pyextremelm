@@ -22,6 +22,7 @@ Created for pyextremelm
 """
 # System modules
 import time
+from copy import deepcopy
 
 
 # External modules
@@ -79,7 +80,7 @@ class ExtremeLearningMachine(object):
                          "output": None}
         self._set_timer()
         training_info["samples"] = X.shape[0]
-        output = X
+        output = deepcopy(X)
         for layer in self.layers:
             input = output
             output = layer.fit(input, y)
@@ -97,13 +98,13 @@ class ExtremeLearningMachine(object):
             prediction (numpy array): The predicted data field.
             prediction_time (float): The prediction duration in seconds.
         """
-        prediction = X
+        prediction = deepcopy(X)
         for layer in self.layers:
             input = prediction
             prediction = layer.predict(input)
         return prediction
 
-    def fit_batch(self, X, y=None):
+    def fit_batch(self, generator, batch_size):
         """
         Method to fit the neural network in a batchwise manner.
         Args:
@@ -114,7 +115,16 @@ class ExtremeLearningMachine(object):
         Returns:
 
         """
-        pass
+        i = 0
+        for X_batch, y_batch in generator(batch_size):
+            if self.layers[0].weights['input'] is None:
+                self.fit(X_batch, y_batch)
+            else:
+                self.update(X_batch, y_batch)
+            i += 1
+            print('Iteration {0:d} finished'.format(i))
+
+
 
     def update(self, X, y=None, decay=1):
         """
@@ -143,7 +153,7 @@ class ExtremeLearningMachine(object):
                          "output": None}
         self._set_timer()
         update_info["samples"] = X.shape[0]
-        output = X
+        output = deepcopy(X)
         for layer in self.layers:
             input = output
             output = layer.update(input, y, decay)

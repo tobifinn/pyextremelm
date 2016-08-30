@@ -44,7 +44,4 @@ class ELMRegressor(ELMPreConfigured):
         super().__init__()
         self.elm.add_layer(
             ELMLayers.ELMRandom(hidden_neurons, activation=activation))
-        if C==0:
-            self.elm.add_layer(ELMLayers.ELMNaive())
-        else:
-            self.elm.add_layer(ELMLayers.ELMRidge(C=C))
+        self.elm.add_layer(ELMLayers.ELMRegression(C=C))
