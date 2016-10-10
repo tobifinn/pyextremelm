@@ -12,22 +12,16 @@ from matplotlib.colors import LogNorm
 
 import scipy.ndimage
 
-from sklearn.utils import as_float_array
-from sklearn.base import TransformerMixin, BaseEstimator
 
 from pyextremelm.builder import ExtremeLearningMachine
-from pyextremelm.builder.layers.convolution import ELMLRF, ELMConvAE
+from pyextremelm.builder.layers.convolution import ELMLRF
 from pyextremelm.builder.layers.pooling import ELMPool
 from pyextremelm.builder.layers.util import ELMNormalize
-
-from pyclamster.clustering.kmeans import KMeans
 
 rng = np.random.RandomState(42)
 output_layer = 20
 
 elm = ExtremeLearningMachine()
-#elm.add_layer(ELMConvAE(50, (7,7), activation='relu', ortho=True, rng=rng))
-#elm.add_layer(ELMLRF(100, (3,3), pad=(1,1), activation='linear', ortho=False, rng=rng))
 elm.add_layer(ELMLRF(40, (3,3), pad=(0,0), activation='linear', ortho=True, rng=rng))
 elm.add_layer(ELMNormalize())
 elm.add_layer(ELMLRF(60, (3,3), pad=(0,0), activation='linear', ortho=True, rng=rng))
@@ -41,7 +35,7 @@ elm.add_layer(ELMLRF(120, (3,3), pad=(0,0), activation='linear', ortho=True, rng
 elm.add_layer(ELMNormalize())
 elm.add_layer(ELMLRF(140, (3,3), pad=(0,0), activation='linear', ortho=True, rng=rng))
 elm.add_layer(ELMNormalize())
-elm.add_layer(ELMLRF(20, (3,3), pad=(0,0), activation='linear', ortho=True, rng=rng))
+elm.add_layer(ELMLRF(20, (3,3), pad=(0,0), activation='sigmoid', ortho=True, rng=rng))
 images = None
 for j in range(1, 5):
     img = scipy.misc.imread('images/Image_Wkm_Aktuell_{0:d}.jpg'.format(j),

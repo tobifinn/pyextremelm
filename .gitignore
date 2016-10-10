@@ -218,3 +218,5 @@ examples/samples.mymemmap
 /pyextremelm/builder/old_layers/
 /pyextremelm/builder/training/
 /scripts/
+/pyextremelm/tf_builder/
+/examples/tensorflow/

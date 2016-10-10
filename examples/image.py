@@ -31,7 +31,7 @@ import matplotlib.gridspec as gridspec
 
 # Internal modules
 import pyextremelm.builder as ELM
-import pyextremelm.builder.layers as ELMLayers
+import pyextremelm.builder.layers_1 as ELMLayers
 
 __version__ = "0.1"
 
