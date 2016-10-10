@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on 06.05.16
-Created for pyExtremeLM
+Created on 04.08.16
+
+Created for pyextremelm
 
 @author: Tobias Sebastian Finn, tobias.sebastian.finn@studium.uni-hamburg.de
 
@@ -25,16 +26,13 @@ import abc
 
 # External modules
 import numpy as np
-import scipy.special
+import scipy
 
 # Internal modules
 
 
-__version__ = "0.1"
-
-
 class Activation(object):
-    def __init__(self, weights):
+    def __init__(self, weights=None):
         self.weights = weights
 
     @abc.abstractmethod
@@ -148,9 +146,9 @@ class Hardlimit(Activation):
         activated_array (np.array): The activated array.
     """
     def activate(self, X):
-        return ((X["input"].dot(self.weights["input"]) +
+        return ((X["input"].dot(self.weights["input"]) -
                  0 if self.weights["bias"] is None else self.weights["bias"])
-                <= 0).astype(int)
+                > 0).astype(int)
 
 
 class Linear(Activation):
@@ -184,6 +182,10 @@ class Relu(Activation):
     Returns:
         activated_array (np.array): The activated array.
     """
+    def __init__(self, weights=None, leaky=0):
+        super().__init__(weights)
+        self.leaky = leaky
+
     def activate(self, X):
         if self.weights["bias"] is None:
             weights_array = self.weights["input"]
@@ -192,10 +194,38 @@ class Relu(Activation):
             weights_array = np.r_[self.weights["input"], self.weights["bias"]]
             X_array = np.c_[X["input"], X["bias"]]
         activated_array = X_array.dot(weights_array)
-        activated_array[activated_array<0] = 0
+        activated_array[activated_array<=0] *= self.leaky
+        return activated_array
+
+
+class Elu(Activation):
+    """
+    The elu activation, which combines the weights with the input.
+    Args:
+        X (dict[numpy array]): The input dict with input and bias key.
+        weights (numpy array): The weights dict with input and bias key.
+
+    Returns:
+        activated_array (np.array): The activated array.
+    """
+    def __init__(self, weights=None, alpha=1):
+        super().__init__(weights)
+        self.alpha = alpha
+
+    def activate(self, X):
+        if self.weights["bias"] is None:
+            weights_array = self.weights["input"]
+            X_array = X["input"]
+        else:
+            weights_array = np.r_[self.weights["input"], self.weights["bias"]]
+            X_array = np.c_[X["input"], X["bias"]]
+        activated_array = X_array.dot(weights_array)
+        activated_array[activated_array<=0] = \
+            self.alpha*(np.exp(activated_array[activated_array<=0])-1)
         return activated_array
 
 named_activations = {"sigmoid": Sigmoid, "tanh": Tanh, "linear": Linear,
                      "gaussian": Gaussian, "multiquadratic": Multiquadratic,
-                     "hardlimit": Hardlimit, "fourier": Fourier, "relu": Relu}
+                     "hardlimit": Hardlimit, "fourier": Fourier, "relu": Relu,
+                     "elu": Elu}
 unnamed_activations = []

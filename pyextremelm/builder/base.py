@@ -29,46 +29,24 @@ from time import time
 import numpy as np
 
 # Internal modules
-from .activations import named_activations, unnamed_activations
-
-__version__ = "0.1"
 
 
-class ELMBase(object):
-    """
-    The base class for every elm component in this layered approach.
-    """
-    __metaclass__ = abc.ABCMeta
-
-    @abc.abstractmethod
-    def __init__(self):
-        pass
-
-    @abc.abstractmethod
-    def fit(self, X, y=None):
-        pass
-
-    @abc.abstractmethod
-    def predict(self, X):
-        pass
-
-    @abc.abstractmethod
-    def update(self, X, y=None):
-        pass
-
-
-class ExtremeLearningMachine(ELMBase):
+class ExtremeLearningMachine(object):
     """
     This class is a container for the layers of the extreme learning machine.
 
-    Attributes:
-        layers (List[ELMLayer]):
+    Args:
+        layers (optional[List[ELMLayer]]):
             The list with the added layers for the extreme learning machine.
+            The default is an empty list, so no layer is added to the container.
     """
-
-    def __init__(self):
-        self.layers = []
-        # self.loss = ELMMetric(loss)
+    def __init__(self, layers=None):
+        self.layers = layers
+        if self.layers is None:
+            self.layers = []
+        self.train_fct = None
+        self.predict_fct = None
+        self.functions = [self.train_fct, self.predict_fct]
 
     def add_layer(self, layer):
         """
@@ -79,6 +57,10 @@ class ExtremeLearningMachine(ELMBase):
         Returns:
             self: returns an instance of self.
         """
+        try:
+            layer.update
+        except Exception as e:
+            raise ValueError('The given layer isn\'t an available elm layer')
         self.layers.append(layer)
         return self
 
@@ -138,96 +120,3 @@ class ExtremeLearningMachine(ELMBase):
         s = [str(l) for l in self.layers]
         s = '\n'.join(s)
         return '\033[1m' + 'Network structure\n' + '\033[0m' + s
-
-
-class ELMLayer(ELMBase):
-    """
-    The ELMLayer represents one layer within the extreme learning machine,
-
-    Attributes:
-        n_neurons (int): Number of neurons within the layer.
-        train_algorithm (Child of ELMTraining): Training method of the layer.
-        activation_funct (str or numpy function):
-            The function with which the values should be activated,
-            Default is None, because in some layers there is no activation.
-    """
-
-    def __init__(self, n_neurons, activation="linear",
-                 bias=False):
-        """
-        Args:
-            n_neurons (int): Number of neurons within the layer.
-            activation_funct (optional[str or activation function]):
-                The function with which the values should be activated,
-                Default is a linear activation.
-            bias (bool): If the layer should have a bias. Default is False.
-        """
-        self.n_neurons = n_neurons
-        self.weights = {"input": None, "bias": None}
-        self.activation_funct = self.get_activation(activation)
-        self.bias = bias
-
-    def __str__(self):
-        s = "{0:s}(neurons: {1:d}, activation: {2:s}, bias: {3:s})".format(
-            self.__class__.__name__, self.n_neurons,
-            str(type(self.activation_funct).__name__), str(self.bias))
-        return s
-
-    @abc.abstractmethod
-    def train_algorithm(self, X, y):
-        pass
-
-    def fit(self, X, y=None):
-        self.weights = self.train_algorithm(X, y)
-        X = self.add_bias(X)
-        self.activation_funct = self.activation_funct(self.weights)
-        return self.activation_funct.activate(X)
-
-    def predict(self, X, **kwargs):
-        X = self.add_bias(X)
-        return self.activation_funct.activate(X)
-
-    def update(self, X, y=None, decay=1):
-        pass
-
-    def add_bias(self, X):
-        if self.bias:
-            input_dict = {"input": X, "bias": np.ones(X.shape[0])}
-        else:
-            input_dict = {"input": X, "bias": None}
-        return input_dict
-
-    @staticmethod
-    def get_activation(funct="sigmoid"):
-        """
-        Function to get the activation function
-        Args:
-            funct (str or function):
-
-        Returns:
-            function: The activation function
-        """
-        if isinstance(funct, str) and funct in named_activations:
-            return named_activations[funct]
-        elif funct is None:
-            return named_activations["linear"]
-        elif funct in list(named_activations.values()):
-            return funct
-        elif funct in unnamed_activations:
-            return funct
-        else:
-            raise ValueError(
-                "%s isn't implemented yet or isn't an available function name"
-                % funct)
-
-    @staticmethod
-    def get_dim(X):
-        """
-        Get the dimensions of X.
-        Args:
-            X (numpy array): X is the input array (shape: samples*dimensions).
-
-        Returns:
-            dimensions (int): The dimensions of X.
-        """
-        return X.shape[1] if len(X.shape) > 1 else 1

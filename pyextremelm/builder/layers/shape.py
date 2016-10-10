@@ -43,6 +43,9 @@ class ShapeLayer(object):
     def fit(self, X, y=None):
         return self.algorithm(X)
 
+    def update(self, X, y=None, decay=1):
+        return self.algorithm(X)
+
     def predict(self, X):
         return self.algorithm(X)
 

@@ -25,21 +25,23 @@ Created for pyExtremeLM
 # External modules
 
 # Internal modules
-from pyextremelm.builder import base as ELM
+from ..base import ELMPreConfigured
 from pyextremelm.builder import layers as ELMLayers
 
-__version__ = "0.1"
 
-
-class ELMRegressor(object):
+class ELMRegressor(ELMPreConfigured):
     def __init__(self, hidden_neurons, activation="sigmoid", C=0):
-        self.elm = ELM.ExtremeLearningMachine()
+        """
+        A pre-configured class for a regression based extreme learning machine.
+        Args:
+            hidden_neurons (int): Number of neurons in the hidden layer.
+            activation (optional[str]): Activation function for the hidden
+                layer. Default is the sigmoid function.
+            C (optional[float]): The constrain factor for the regression. If
+                there should be no constrain the factor has to be 0.
+                Default is no constrain.
+        """
+        super().__init__()
         self.elm.add_layer(
             ELMLayers.ELMRandom(hidden_neurons, activation=activation))
-        self.elm.add_layer(ELMLayers.ELMRidge(C=C))
-
-    def fit(self, X, y):
-        return self.elm.fit(X, y)
-
-    def predict(self, X):
-        return self.elm.predict(X)
+        self.elm.add_layer(ELMLayers.ELMRegression(C=C))

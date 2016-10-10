@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on 23.06.16
+Created on 07.08.16
 
 Created for pyextremelm
 
@@ -22,177 +22,67 @@ Created for pyextremelm
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 # System modules
-import abc
-import warnings
+import sys
 
 # External modules
 import numpy as np
 import scipy
 
 import theano
+from theano.ifelse import ifelse
 import theano.tensor as T
-import theano.tensor.nnet.neighbours
-import theano.tensor.signal.pool as Pool
 
 # Internal modules
-from ..base import ELMLayer
-from .supervised import ELMRidge
-from .random import ELMOrthoRandom
-from .shape import PadLayer
-
-__version__ = "0.1"
-
-named_activations = {
-    "sigmoid": T.nnet.sigmoid,
-    "hardsig": T.nnet.hard_sigmoid,
-    "tanh": T.tanh,
-    "fourier": T.cos,
-    "relu": T.nnet.relu,
-    "linear": None
-}
-
-unnamed_activations = []
+from .base import ELMConvLayer
 
 
-class BaseConv(ELMLayer):
-    """
-    The BaseConv represents a basic convolutional layer within an ELM.
+class ELMLRF(ELMConvLayer):
+    def __init__(self, n_features, spatial=(3,3), stride=(1,1), pad=(1,1),
+                 activation='linear', bias=True, ortho=False, rng=None):
+        """
+        The ELMLRF represents a local receptive field layer within an ELM [1].
+        This implementation of ELMLRF is based on theano.
 
-    Attributes:
-        n_features (int): Number of features within the layer.
-        spatial_extent (tuple[int]): The spatial extent of the
-            local receptive field in pixels.
-            Size should be (width, height, optional[channels]). If channels
-            isn't set all available channels of the input will be used.
-        stride (int):The stride of the local receptive fields in pixels.
-        zero_padding (int): The zero-padding of the input layer in pixels.
-        train_algorithm (Child of ELMTraining): Training method of the layer.
-        activation_funct (str or numpy function):
-            The function with which the values should be activated,
-            Default is None, because in some layers there is no activation.
-
-    Args:
-        n_features (int): Number of features within the layer.
-        spatial_extent (tuple[int]): The spatial extent of the
-            local receptive field in pixels.
-            Size should be (channels, height, width).
-        stride (int):The stride of the local receptive fields in pixels.
-        zero_padding (int): The zero-padding of the input layer in pixels.
-        activation (optional[str or activation function]):
-            The function with which the values should be activated,
-            Default is a linear activation.
-        bias (bool): If the layer should have a bias. Default is False.
-    """
-    __metaclass__ = abc.ABCMeta
-
-    def __init__(self, n_features, spatial_extent=(3, 5, 5), stride=1,
-                 zero_padding='valid', activation="relu", bias=False,
-                 rng=None):
-        self.filter_shape = tuple([n_features] + list(spatial_extent))
-        self.spatial_extent = spatial_extent
-        self.stride = stride
-        self.zero_padding = zero_padding
-        self.conv = None
+        Attributes:
+            n_features (int): Number of features within the layer.
+            spatial_extent (optional[int/tuple[int]]): The spatial extent of
+                the local receptive field in pixels.
+                Size should be (width, height) or an integer, so that the width
+                and height are the same. Default is a 3x3 lrf.
+            stride (optional[int/tuple[int]]):The stride of the local receptive
+                fields in pixels. Size should be (width, height) or an integer,
+                so that the width and height are the same. Default is a stride
+                of 1x1.
+            pad (optional[int/tuple[int]]): The zero-padding of the input layer
+                in pixels. Size should be (width, height) or an integer,
+                so that the width and height are the same. Default is a padding
+                of 1x1.
+            activation_funct (str or convolutional activation function):
+                The function with which the values should be activated,
+                Default is None, because in some layers there is no activation.
+            ortho (optional[bool]): If the random weights should be
+                orthogonalized or not. Default is False.
+            rng (optional[numpy RandomState]): A numpy random state to generate
+                the random weights. If no state is given, the seed will be set
+                to 42.
+        -----------------------------------------------------------------------
+        [1] Huang, Guang-Bin, et al. "Local receptive fields based extreme
+            learning machine." IEEE Computational Intelligence Magazine 10.2
+            (2015): 18-29.
+        """
+        super().__init__(n_features, spatial, stride, pad, activation, bias)
+        self.ortho = ortho
         self.rng = rng
-        self.activations = named_activations
-        super().__init__(n_features, activation, bias)
         if self.rng is None:
             self.rng = np.random.RandomState(42)
-
-    def __str__(self):
-        s = "{0:s}(filters shape: {1:s}, stride: {2:d}," \
-            "padding: {3:s}, activation: {4:s}, bias: {5:s})".format(
-            self.__class__.__name__, str(self.filter_shape), self.stride,
-            str(self.zero_padding), str(type(self.activation_funct).__name__),
-            str(self.bias))
-        return s
-
-    @property
-    def trained(self):
-        """
-        Property to check if the layer is trained.
-        Returns:
-            trained (bool): True if the layer is trained, else False.
-        """
-        if self.weights is None:
-            trained = False
-        else:
-            trained = True
-        return trained
-
-    @abc.abstractmethod
-    def fit(self, X, y=None):
-        pass
-
-    @abc.abstractmethod
-    def _generate_conv(self):
-        pass
-
-    def predict(self, X):
-        return self.conv(X)
-
-    def get_activation(self, funct="sigmoid"):
-        """
-        Function to get the activation function
-        Args:
-            funct (str or function):
-
-        Returns:
-            function: The activation function
-        """
-        if isinstance(funct, str) and funct in self.activations:
-            return named_activations[funct]
-        else:
-            return funct
-
-
-class ELMLRF(BaseConv):
-    """
-    The ELMLRF represents a local receptive field layer within an ELM [1].
-
-    Attributes:
-        n_features (int): Number of features within the layer.
-        spatial_extent (tuple[int]): The spatial extent of the
-            local receptive field in pixels.
-            Size should be (width, height, optional[channels]). If channels
-            isn't set all available channels of the input will be used.
-        stride (int):The stride of the local receptive fields in pixels.
-        zero_padding (int): The zero-padding of the input layer in pixels.
-        train_algorithm (Child of ELMTraining): Training method of the layer.
-        activation_funct (str or numpy function):
-            The function with which the values should be activated,
-            Default is None, because in some layers there is no activation.
-    -----------------------------------------------------------------------
-    [1] Huang, Guang-Bin, et al. "Local receptive fields based extreme learning
-        machine." IEEE Computational Intelligence Magazine 10.2 (2015): 18-29.
-    """
-    def __init__(self, n_features, spatial_extent=(3, 5, 5), stride=1,
-                 zero_padding='valid', activation="relu", bias=True,
-                 rng=None):
-        """
-        Args:
-            n_features (int): Number of features within the layer.
-            spatial_extent (tuple[int]): The spatial extent of the
-                local receptive field in pixels.
-                Size should be (channels, height, width).
-            stride (int):The stride of the local receptive fields in pixels.
-            zero_padding (int): The zero-padding of the input layer in pixels.
-            activation (optional[str or activation function]):
-                The function with which the values should be activated,
-                Default is a linear activation.
-            bias (bool): If the layer should have a bias. Default is False.
-        """
-        self.activations = named_activations
-        super().__init__(n_features, spatial_extent, stride, zero_padding,
-                         activation, bias, rng)
 
     def _generate_conv(self, image_shape=None):
         input = T.tensor4(name='input')
         W = theano.shared(np.asarray(self.weights['input'], dtype=input.dtype),
                           name='W')
         conv_out = T.nnet.conv2d(input, W,
-                                 border_mode=self.zero_padding,
-                                 subsample=(self.stride, self.stride),
+                                 border_mode=self.pad,
+                                 subsample=self.stride,
                                  filter_shape=self.filter_shape,
                                  input_shape=image_shape)
         if self.bias:
@@ -200,152 +90,299 @@ class ELMLRF(BaseConv):
                 np.asarray(self.weights['bias'], dtype=input.dtype),
                 name='b')
             conv_out = conv_out + b.dimshuffle('x', 0, 'x', 'x')
-        if self.activation_funct is None:
+        if self.activation_fct is None:
             output = conv_out
-        elif self.activation_funct == "hardlimit":
+        elif self.activation_fct == "hardlimit":
             output = conv_out>0
-        elif self.activation_funct == "hardtanh":
+        elif self.activation_fct == "hardtanh":
             output = T.switch(conv_out > -1, T.switch(conv_out > 1, 1, conv_out), -1)
         else:
-            output = self.activation_funct(conv_out)
-        self.conv = theano.function([input], output)
+            output = self.activation_fct(conv_out)
+        self.conv_fct = theano.function([input], output)
 
-    def train_algorithm(self, X, y):
-        weights = {"input": None, "bias": None}
-        weights["input"] = self.rng.standard_normal(size=self.filter_shape)
+    def train_algorithm(self, X):
+        self.filter_shape = tuple([self.n_features, X.shape[1]]+
+                             list(self.spatial))
+        weights = {
+            "input": self.rng.standard_normal(size=self.filter_shape),
+            "bias": None}
         if self.bias:
-            weights["bias"] = self.rng.standard_normal(size=(self.n_neurons,))
+            weights["bias"] = self.rng.standard_normal(size=(self.n_features,))
+        if self.ortho:
+            weights['input'] = weights["input"].reshape((self.n_features, -1))
+            s = weights['input'].shape
+            if s[0] < s[1]:
+                weights['input'] = scipy.linalg.orth(weights['input'].T).T
+            else:
+                weights['input'] = scipy.linalg.orth(weights['input'])
+            weights['input'] = weights['input'].reshape(self.filter_shape)
+            if self.bias:
+                weights["bias"] = scipy.linalg.orth(weights["bias"].reshape((-1, 1))).reshape((-1))
         return weights
 
     def fit(self, X, y=None):
-        self.weights = self.train_algorithm(X, y)
-        self._generate_conv((None, X.shape[1], X.shape[2], X.shape[3]))
+        self.weights = self.train_algorithm(X)
+        self._generate_conv()
+        return self.predict(X)
+
+    def update(self, X, y=None, decay=1):
         return self.predict(X)
 
 
-class ELMPool(BaseConv):
-    """
-    The ELMConvolutional represents one convolutional layer within an ELM.
-
-    Attributes:
-        n_features (int): Number of features within the layer.
-        spatial_extent (tuple[int]): The spatial extent of the
-            local receptive field in pixels.
-            Size should be (width, height, optional[channels]). If channels
-            isn't set all available channels of the input will be used.
-        stride (int):The stride of the local receptive fields in pixels.
-        zero_padding (int): The zero-padding of the input layer in pixels.
-        activation_funct (str or numpy function):
-            The function with which the values should be activated,
-            Default is None, because in some layers there is no activation.
-    """
-    def __init__(self, pooling="max", ignore_border=False,
-                 spatial_extent=(2, 2), stride=None, zero_padding=(0, 0),
-                 activation=None):
+class ELMConvNaive(ELMConvLayer):
+    def __init__(self, spatial=(3, 3), stride=(1, 1),
+                 pad=(1, 1)):
         """
-        Args:
-            n_features (int): Number of features within the layer.
-            spatial_extent (tuple[int]): The spatial extent of the
-                pooling in pixels. Size should be (height, width).
-            stride (int):The stride of the local receptive fields in pixels.
-            zero_padding (int): The zero-padding of the input layer in pixels.
-            activation (optional[str or activation function]):
-                The function with which the values should be activated,
-                Default is a linear activation.
-        """
-        self.activations = named_activations
-        super().__init__(1, spatial_extent, stride, zero_padding, activation)
-        self.pooling = pooling
-        self.ignore_border = ignore_border
+        The ELMConvNaive represents a convolutional regression layer within
+        an ELM without any constrain. This implementation is based on theano.
 
-    def _generate_conv(self):
+        Attributes:
+            spatial_extent (optional[int/tuple[int]]): The spatial extent of
+                the local receptive field in pixels.
+                Size should be (width, height) or an integer, so that the width
+                and height are the same. Default is a 3x3 lrf.
+            stride (optional[int/tuple[int]]):The stride of the local receptive
+                fields in pixels. Size should be (width, height) or an integer,
+                so that the width and height are the same. Default is a stride
+                of 1x1.
+            pad (optional[int/tuple[int]]): The zero-padding of the input layer
+                in pixels. Size should be (width, height) or an integer,
+                so that the width and height are the same. Default is a padding
+                of 1x1.
+        """
+        super().__init__(1, spatial, stride, pad, 'linear', False)
+        self.hidden_matrices = {'K': np.empty((0,0,0,0)),
+                                'A': np.empty((0,0,0,0))}
+        self.output_gen = None
+
+    def _calc_weights(self):
+        K = self.hidden_matrices['K']
+        A = self.hidden_matrices['A']
+        for i in range(A.shape[1]):
+            A[:,i,:,:] = A[:,i,:,:].dot(1/K[i])
+        self.weights['input'] = A
+
+    def _generate_conv(self, image_shape=None):
         input = T.tensor4(name='input')
-        conv_out = Pool.pool_2d(
-            input,
-            ds=(self.spatial_extent[0], self.spatial_extent[1]),
-            ignore_border=self.ignore_border,
-            mode=self.pooling,
-            padding=self.zero_padding,
-            st=None if self.stride is None else (self.stride, self.stride))
-        if self.activation_funct is None:
-            output = conv_out
-        else:
-            output = self.activation_funct(conv_out)
-        self.conv = theano.function([input], output)
+        W = theano.shared(np.asarray(self.weights['input'], dtype=input.dtype),
+                          name='W')
+        output = T.nnet.conv2d(input, W,
+                                 border_mode=self.pad,
+                                 subsample=self.stride,
+                                 filter_shape=self.hidden_matrices['A'].shape,
+                                 input_shape=image_shape)
+        self.conv_fct = theano.function([input], output)
 
     def fit(self, X, y=None):
+        self.n_features = y.shape[0]
+        if self.output_gen is None:
+            input = T.tensor4(name='input')
+            target = T.tensor4(name='target')
+            output = T.nnet.conv2d(input, target,
+                                   border_mode=self.pad,
+                                   subsample=self.stride)
+            self.output_gen = theano.function([input, target], output)
+        self.hidden_matrices['A'] = self.output_gen(y.transpose(1,0,2,3),
+                                                    X.transpose(1,0,2,3))
+        self.hidden_matrices['K'] = np.sum(np.power(X, 2), axis=(0,2,3))
+        self._calc_weights()
+        self._generate_conv()
+        return self.predict(X)
+
+    def update(self, X, y=None, decay=1):
+        self.hidden_matrices['A'] = self.hidden_matrices['A']*decay+\
+            self.output_gen(y.transpose(1,0,2,3), X.transpose(1,0,2,3))
+        self.hidden_matrices['K'] = self.hidden_matrices['K']*decay+\
+                                    np.sum(np.power(X, 2), axis=(0,2,3))
+        self._calc_weights()
+        self._generate_conv()
+        return self.predict(X)
+
+class ELMConvNaive_T(ELMConvLayer):
+    def __init__(self, spatial=(3, 3), stride=(1, 1),
+                 pad=(1, 1), C=0):
+        """
+        The ELMConvNaive represents a convolutional regression layer within
+        an ELM without any constrain. This implementation is based on theano.
+
+        Attributes:
+            spatial_extent (optional[int/tuple[int]]): The spatial extent of
+                the local receptive field in pixels.
+                Size should be (width, height) or an integer, so that the width
+                and height are the same. Default is a 3x3 lrf.
+            stride (optional[int/tuple[int]]):The stride of the local receptive
+                fields in pixels. Size should be (width, height) or an integer,
+                so that the width and height are the same. Default is a stride
+                of 1x1.
+            pad (optional[int/tuple[int]]): The zero-padding of the input layer
+                in pixels. Size should be (width, height) or an integer,
+                so that the width and height are the same. Default is a padding
+                of 1x1.
+        """
+        super().__init__(1, spatial, stride, pad, 'linear', False)
+        self.hidden_matrices = {'K': None, 'A': None}
+        self._C = C
+        self.conv_fct = {'train': None, 'predict': None}
+
+    def fit(self, X, y=None):
+        self.n_features = y.shape[0]
+        self.weights['input'] = theano.shared(value=np.zeros((
+            self.n_features, X.shape[1], self.spatial[0], self.spatial[1]),
+            dtype=theano.config.floatX), name='w', borrow=True)
+        input = T.tensor4(name='input')
+        target = T.tensor4(name='target')
+        decay = T.scalar(name='decay')
+        xy = T.nnet.conv2d(input.transpose(1,0,2,3), target.transpose(1,0,2,3),
+                           border_mode=self.pad, subsample=self.stride)
+        xx = T.sum(T.power(input, 2), axis=(0,2,3))
+        k = ifelse(self.hidden_matrices['input'] is None, )
+
+        lam = theano.shared(value=self._C, name='constrain', borrow=True)
+        prediction = T.nnet.conv2d(input, self.weights['input'],
+                                   border_mode=self.pad,
+                                   subsample=self.stride)
+        weights, _ = theano.scan(
+            fn=lambda a, k, c: a/(k+c), outputs_info=None,
+            sequences=[self.hidden_matrices['A'].transpose(1,0,2,3),
+                       self.hidden_matrices['K']], non_sequences=lam)
+        new_weights = weights.transpose(1,0,2,3)
+        updates = [(self.hidden_matrices['K'],
+                    self.hidden_matrices['K'].dot(decay)+xx),
+                   (self.hidden_matrices['A'],
+                    self.hidden_matrices['A'].dot(decay) + xy),
+                   (self.weights['input'], new_weights)]
+        self.conv_fct['train'] = theano.function([input, target, decay],
+                                                 prediction,
+                                                 updates=updates)
+        self.conv_fct['predict'] = theano.function([input], prediction)
+        return self.conv_fct['train'](X, y, 1)
+
+    def update(self, X, y=None, decay=1):
+        return self.conv_fct['train'](X, y, decay)
+
+    def predict(self, X):
+        return self.conv_fct['predict'](X)
+
+
+class ELMConvRidge(ELMConvNaive):
+    def __init__(self, spatial=(3, 3), stride=(1, 1),
+                 pad=(1, 1), C=2E5):
+        """
+        The ELMConvRidge represents a convolutional regression layer within
+        an ELM with a L2-constrain. This implementation is based on theano.
+
+        Attributes:
+            spatial_extent (optional[int/tuple[int]]): The spatial extent of
+                the local receptive field in pixels.
+                Size should be (width, height) or an integer, so that the width
+                and height are the same. Default is a 3x3 lrf.
+            stride (optional[int/tuple[int]]):The stride of the local receptive
+                fields in pixels. Size should be (width, height) or an integer,
+                so that the width and height are the same. Default is a stride
+                of 1x1.
+            pad (optional[int/tuple[int]]): The zero-padding of the input layer
+                in pixels. Size should be (width, height) or an integer,
+                so that the width and height are the same. Default is a padding
+                of 1x1.
+            C (optional[float]): The L2-constrain factor. Default is 2E5.
+        """
+        super().__init__(spatial, stride, pad)
+        self._C = C
+
+    def _calc_weights(self):
+        K = self.hidden_matrices['K']
+        A = self.hidden_matrices['A']
+        for i in range(A.shape[1]):
+            A[:, i, :, :] = A[:, i, :, :].dot(1/(1/self._C+K[i]))
+        self.weights['input'] = A
+
+
+class ELMConvAE(ELMConvLayer):
+    def __init__(self, n_features, spatial=(3,3), stride=(1,1), pad=(1,1),
+                 activation=['sigmoid', 'linear'], bias=True, C=0, ortho=True,
+                 rng=None):
+        """
+        The ELMLRF represents a local receptive field layer within an ELM [1].
+        This implementation of ELMLRF is based on theano.
+
+        Attributes:
+            n_features (int): Number of features within the layer.
+            spatial_extent (optional[int/tuple[int]]): The spatial extent of
+                the local receptive field in pixels.
+                Size should be (width, height) or an integer, so that the width
+                and height are the same. Default is a 3x3 lrf.
+            stride (optional[int/tuple[int]]):The stride of the local receptive
+                fields in pixels. Size should be (width, height) or an integer,
+                so that the width and height are the same. Default is a stride
+                of 1x1.
+            pad (optional[int/tuple[int]]): The zero-padding of the input layer
+                in pixels. Size should be (width, height) or an integer,
+                so that the width and height are the same. Default is a padding
+                of 1x1.
+            activation_funct (str or convolutional activation function):
+                The function with which the values should be activated,
+                Default is None, because in some layers there is no activation.
+            Bias (optional[bool]: If the AE should contain a bias.
+                Default is false.
+            C (optional[float]): The L2-constrain factor. Default is 0.
+            ortho (optional[bool]): If the random weights should be
+                orthogonalized or not. Default is False.
+            rng (optional[numpy RandomState]): A numpy random state to generate
+                the random weights. If no state is given, the seed will be set
+                to 42.
+        """
+        try:
+            super().__init__(n_features, spatial, stride, pad, activation[1], bias)
+            self.layers = [ELMLRF(n_features, spatial, stride, pad, activation[0],
+                                  bias, ortho, rng)]
+        except:
+            super().__init__(n_features, spatial, stride, pad, activation, bias)
+            self.layers = [ELMLRF(n_features, spatial, stride, pad, activation,
+                                  bias, ortho, rng)]
+        self._C = C
+        if self._C>0:
+            self.layers.append(ELMConvRidge(C))
+        else:
+            self.layers.append(ELMConvNaive())
+
+    def _generate_conv(self, image_shape=None):
+        input = T.tensor4(name='input')
+        W = theano.shared(np.asarray(self.weights['input'], dtype=input.dtype),
+                          name='W')
+        conv_out = T.nnet.conv2d(input, W,
+                               border_mode=self.pad,
+                               subsample=self.stride,
+                               filter_shape=self.weights['input'].shape,
+                               input_shape=image_shape)
+        if self.activation_fct is None:
+            output = conv_out
+        elif self.activation_fct == "hardlimit":
+            output = conv_out>0
+        elif self.activation_fct == "hardtanh":
+            output = T.switch(conv_out > -1, T.switch(conv_out > 1, 1, conv_out), -1)
+        else:
+            output = self.activation_fct(conv_out)
+        self.conv_fct = theano.function([input], output)
+
+    def _calc_weights(self, X, decay=False):
+        layer_input = X
+        for layer in self.layers:
+            if not isinstance(decay, bool):
+                layer_input = layer.update(layer_input, X, decay)
+            else:
+                layer_input = layer.fit(layer_input, X)
+        weights = self.layers[-1].weights
+        weights['input'] = weights['input'].transpose(1,0,2,3)
+        return weights
+
+    def fit(self, X, y=None):
+        self.weights = self._calc_weights(X)
+        self._generate_conv()
+        return self.predict(X)
+
+    def update(self, X, y=None, decay=1):
+        self.weights = self._calc_weights(X, decay)
         self._generate_conv()
         return self.predict(X)
 
 
-class ELMConvAE_linear(ELMLRF):
-    def __init__(self, n_features, spatial_extent=(5, 5), stride=1,
-                 zero_padding=0, activation="relu", bias=False,
-                 rng=None, C=0):
-        """
-        Args:
-            n_features (int): Number of features within the layer.
-            spatial_extent (tuple[int]): The spatial extent of the
-                local receptive field in pixels.
-                Size should be (channels, height, width).
-            stride (int):The stride of the local receptive fields in pixels.
-            zero_padding (int): The zero-padding of the input layer in pixels.
-            activation (optional[str or activation function]):
-                The function with which the values should be activated,
-                Default is a linear activation.
-            bias (bool): If the layer should have a bias. Default is False.
-            C (optional[float]): The constrain factor for the regression.
-        """
-        self.activations = named_activations
-        super().__init__(n_features, spatial_extent, stride, zero_padding,
-                         activation, False, rng)
-        #self.neib_shape = tuple([1] + list(spatial_extent))
-        self.img2neib = None
-        self._generate_img2neib()
-        self.layers = [ELMOrthoRandom(n_features, activation, bias),
-                       ELMRidge(C)]
-
-    def _generate_img2neib(self):
-        input = T.tensor4(name='input')
-        output = T.nnet.neighbours.images2neibs(
-            input, neib_shape=self.spatial_extent,
-            neib_step=None if self.stride is None else (self.stride, self.stride))
-        self.img2neib = theano.function([input], output)
-
-    def _add_pad(self, X):
-        if self.zero_padding>0:
-            layer = PadLayer(self.zero_padding)
-            return layer.fit(X)
-        else:
-            return X
-
-    def train_algorithm(self, X, y=None):
-        x = self.img2neib(X)
-        x = x.reshape((X.shape[0], X.shape[1], -1, self.spatial_extent[0],
-                       self.spatial_extent[1])).transpose(0,2,3,4,1)
-        x = x.reshape((x.shape[0], x.shape[1], -1))
-        x = x.reshape((-1, x.shape[-1]))
-        layer_input = x
-        for layer in self.layers:
-            layer_input = layer.fit(layer_input, x)
-        weights = self.layers[-1].weights
-        if len(weights["input"].shape)<2:
-            weights["input"] = weights["input"].reshape(-1, 1)
-        spatial = tuple([weights["input"].shape[0]] +
-                        [X.shape[1]] +
-                        list(self.spatial_extent))
-        weights["input"] = weights["input"].reshape(spatial)
-        return weights
-
-    def fit(self, X, y=None):
-        X = self._add_pad(X)
-        self.weights = self.train_algorithm(X, y)
-        self._generate_conv((None, X.shape[1], X.shape[2], X.shape[3]))
-        return self.predict(X)
-
-#    def fit(self, X, y=None):
-#        return super().fit(X, y)
-
-    def predict(self, X):
-        X = self._add_pad(X)
-        return super().predict(X)

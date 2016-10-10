@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on 20.05.16
+Created on 08.08.16
 
 Created for pyextremelm
 
@@ -26,7 +26,23 @@ Created for pyextremelm
 # External modules
 
 # Internal modules
-from .supervised import *
-from .unsupervised import *
+from .. import builder as ELM
 
-__all__ = ['ELMClassifier', 'ELMRegressor']
+class ELMPreConfigured(object):
+    def __init__(self):
+        self.elm = ELM.ExtremeLearningMachine()
+
+    def fit(self, X, y=None):
+        return self.elm.fit(X, y)
+
+    def predict(self, X):
+        return self.elm.predict(X)
+
+    def update(self, X, y=None, decay=1):
+        return self.elm.update(X, y, decay)
+
+    def fit_batch(self, X, y=None):
+        return self.elm.fit_batch(X, y)
+
+    def print_network_structure(self):
+        return self.elm.print_network_structure()

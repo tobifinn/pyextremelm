@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on 20.05.16
+Created on 02.08.16
 
 Created for pyextremelm
 
@@ -28,42 +28,49 @@ import numpy as np
 import scipy
 
 # Internal modules
-from ..base import ELMLayer
-
-__version__ = "0.1"
+from .base import ELMLayer
 
 
 class ELMRandom(ELMLayer):
-    def __init__(self, n_neurons, activation="sigmoid", bias=True, rng=None):
-        super().__init__(n_neurons, activation, bias)
+    """
+    This layer represents a random layer within the neural network
+    """
+    def __init__(self, n_features, activation="sigmoid", bias=True,
+                 ortho=False, rng=None,):
+        super().__init__(n_features, activation, bias)
+        self.ortho = ortho
         self.rng = rng
         if self.rng is None:
            self.rng = np.random.RandomState(42)
 
-    def train_algorithm(self, X, y):
+    def __str__(self):
+        s = "{0:s}, orthogonalized: {1:s})".format(
+            super().__str__()[:-1], str(self.ortho))
+        return s
+
+    def train_algorithm(self, X, y=None):
         weights = {
-            "input": self.rng.randn(self.get_dim(X), self.n_neurons),
+            "input": self.rng.randn(self.get_dim(X), self.n_features),
             "bias": None}
         if self.bias:
-            weights["bias"] = self.rng.randn(1, self.n_neurons)
+            weights["bias"] = self.rng.randn(1, self.n_features)
+        if self.ortho:
+            if self.get_dim(X) > self.n_features:
+                weights["input"] = scipy.linalg.orth(weights["input"])
+            else:
+                weights["input"] = scipy.linalg.orth(weights["input"].T).T
+            if self.bias:
+                weights["bias"] = np.linalg.qr(weights["bias"].T)[0].T
         return weights
 
+    def fit(self, X, y=None):
+        self.weights = self.train_algorithm(X, y)
+        try:
+            self.activation_fct.weights = self.weights
+        except Exception as e:
+            raise ValueError('This activation isn\'t implemented yet'
+                  '\n(original exception: {0:s})'.format(e))
+        return self.predict(X)
 
-class ELMOrthoRandom(ELMLayer):
-    def __init__(self, n_neurons, activation="sigmoid", bias=True, rng=None):
-        super().__init__(n_neurons, activation, bias)
-        self.rng = rng
-        if self.rng is None:
-           self.rng = np.random.RandomState(42)
-
-    def train_algorithm(self, X, y):
-        weights = {"input": None, "bias": None}
-        input_weights = self.rng.randn(self.get_dim(X), self.n_neurons)
-        if self.get_dim(X) > self.n_neurons:
-            weights["input"] = scipy.linalg.orth(input_weights)
-        else:
-            weights["input"] = scipy.linalg.orth(input_weights.T).T
-        if self.bias:
-            weights["bias"] = np.linalg.qr(self.rng.randn(1, self.n_neurons).T
-                                           )[0].T
-        return weights
+    def update(self, X, y=None, decay=1):
+        return self.predict(X)

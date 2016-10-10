@@ -39,10 +39,9 @@ def x_trans(x):
     return np.sin(x)
 
 x_dimensions = 1
-train_size = 1000
-test_size = 350
+train_size = 100
+test_size = 1000
 hidden_neurons = 500
-
 
 x_train_size = (train_size, x_dimensions)
 x_test_size = (test_size, x_dimensions)
@@ -50,7 +49,7 @@ x_test_size = (test_size, x_dimensions)
 # Generate the trainings data
 train_x = np.random.uniform(0, 10, size=x_train_size)
 train_y = x_trans(train_x)
-train_y += np.random.normal(0, 0.3, size=(train_size, 1))
+train_y += np.random.normal(0, 0.3, size=(train_size,1))
 train_x_scaler = StandardScaler()
 train_x = train_x_scaler.fit_transform(train_x)
 train_y_scaler = StandardScaler()
@@ -72,19 +71,20 @@ plt.plot(x_range, x_trans(x_range), color="0")
 
 
 # initialize the extreme learning machines
-# ELM with constraint
-elm = ELMRegressor(hidden_neurons, C=2E5)
-# # ELM without constraint
-elmn = ELMRegressor(hidden_neurons, C=0)
-# # ELM with constraint and a fourier activation
-elmf = ELMRegressor(hidden_neurons, activation="fourier", C=2E5)
-
+# # ELM with constraint
+elm = ExtremeLearningMachine()
+elm.add_layer(ELMLayers.ELMRandom(hidden_neurons))
+elm.add_layer(ELMLayers.ELMRegression(C=2E10))# # # ELM without constraint
+elmw = ExtremeLearningMachine()
+elmw.add_layer(ELMLayers.ELMRandom(hidden_neurons))
+elmw.add_layer(ELMLayers.ELMRegression(C=0))
+# # # ELM with constraint and a fourier activation
+elmf = ELMRegressor(hidden_neurons, activation="fourier", C=2E10)
 
 instances = {
     'Standard': elm,
-    'w/o C':elmn,
+    'Without constrain': elmw,
     'Fourier': elmf}
-
 
 for i in instances:
     t0 = time()

@@ -25,31 +25,36 @@ Created for pyExtremeLM
 # External modules
 
 # Internal modules
-from pyextremelm.builder import base as ELM
+from .regression import ELMRegressor
 from pyextremelm.builder import layers as ELMLayers
 
 
-__version__ = "0.1"
-
-
-class ELMClassifier(object):
+class ELMClassifier(ELMRegressor):
     def __init__(self, hidden_neurons, activation="sigmoid", C=0):
-        self.classifier = ELMLayers.ELMClass()
-        self.elm = ELM.ExtremeLearningMachine()
-        self.elm.add_layer(
-            ELMLayers.ELMRandom(hidden_neurons, activation=activation))
-        self.elm.add_layer(ELMLayers.ELMRidge(C=C))
+        """
+        A pre-configured class for a softmax based extreme learning machine.
+        Args:
+            hidden_neurons (int): Number of neurons in the hidden layer.
+            activation (optional[str]): Activation function for the hidden
+                layer. Default is the sigmoid function.
+            C (optional[float]): The constrain factor for the regression. If
+                there should be no constrain the factor has to be 0.
+                Default is no constrain.
+        """
+        super().__init__(hidden_neurons=hidden_neurons, activation=activation,
+                         C=C)
+        self.classifier = ELMLayers.ELMSoftMax()
         self.elm.add_layer(self.classifier)
 
-    def print_network_structure(self):
-        return self.elm.print_network_structure()
+    def fit(self, X, y=None):
+        if len(y.shape) == 1:
+            y = self.labels_bin(y)
+        super().fit(X, y)
+
+    def fit_batch(self, X, y=None):
+        if len(y.shape) == 1:
+            y = self.labels_bin(y)
+        super().fit_batch(X, y)
 
     def labels_bin(self, X):
         return self.classifier.labels_bin(X)
-
-    def fit(self, X, y):
-        y = self.classifier.labels_bin(y)
-        return self.elm.fit(X, y)
-
-    def predict(self, X):
-        return self.elm.predict(X)

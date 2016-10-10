@@ -28,27 +28,30 @@ scikit-learn.
 Some basic examples (at the moment only a simple sinus regression and the use
 of the auto-encoder for images) could be found in the examples folder.
 
+The classification is based on a regression with a softmax layer afterward.
+
 This project is rapidly developing, so some of the code
 hasn't any docstring yet and also the documentation isn't complete.
 
 
 **Currently implemented:**
-<li>Pre-configured networks (only regression currently).
+<li>Pre-configured networks.
 <li>Network builder to generate own networks.
 <li>Regression learning based on the approach without and with constrainment [1,3,4].
+<li>Classification learning with and without constrainment [1,3,4].
 <li>Different activation functions.
 <li>Random algorithm to get the best set of random weights.
 <li>ELM-autoencoder [7].
 <li>Orthogonal random weights.
+<li>Local receptive fields based extreme learning machine [9]
+
 
 **Planned:**
-<li>Classification learning with and without constrainment [1,3,4].
 <li>Supervised learning with any supervised scikit-learn function.
 <li>Unsupervised learning based on [5,6].
 <li>Support for unsupervised scikit-learn algorithms.
 <li>Constraint based on the L1-norm (at the moment the lasso of scikit-learn
 is used for sparse learning) [8]
-<li>Local receptive fields based extreme learning machine [9]
 <li>Plotting function to visualize the Extreme Learning Machine with training results.
 
 

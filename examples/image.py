@@ -31,12 +31,13 @@ import matplotlib.gridspec as gridspec
 
 # Internal modules
 import pyextremelm.builder as ELM
-import pyextremelm.builder.layers as ELMLayers
+import pyextremelm.builder.layers_1 as ELMLayers
 
 __version__ = "0.1"
 
 image_center = int(1920 / 2)
 n_neurons = 20
+constrain = 2E12
 
 def split_image(image, parts, part_nr=None):
     width = [int(image.shape[0] / parts), int(image.shape[1] / parts)]
@@ -77,16 +78,14 @@ for j in range(1, 5):
         trainig_samples = np.concatenate((trainig_samples, samples))
 
 elmae = ELM.ExtremeLearningMachine()
-elmae.add_layer(ELMLayers.ELMAE(n_neurons, activation="sigmoid", C=0.1))
+elmae.add_layer(ELMLayers.ELMAE(n_neurons, activation="sigmoid", C=constrain))
 elmae.fit(trainig_samples, None)
 
 
 weights = elmae.layers[0].weights["input"].reshape((size[0], size[1],n_neurons))
-for i in range(0, weights.shape[2]):
-    weights[:,:,i] /= np.sqrt(np.sum(np.power(weights[:,:,i], 2)))
 rows = int(np.ceil(weights.shape[2]/5))
 fig = plt.figure(0)
-fig.suptitle("Maximum activation for the first ae layer")
+fig.suptitle("Weights for the first autoencoder layer")
 gs = gridspec.GridSpec(rows, 5)
 for i in range(weights.shape[2]):
     ax = plt.subplot(gs[int(i / 5) - rows, i % 5])
