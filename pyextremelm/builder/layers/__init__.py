@@ -32,4 +32,5 @@ from .regression import *
 from .classification import *
 
 
-__all__ = ["ELMRandom", "ELMRidge", "ELMNaive", "ELMSoftMax", 'ELMAE']
+__all__ = ["ELMRandom", "ELMRidge", "ELMNaive", "ELMSoftMax", 'ELMAE',
+        'ELMRecurrent']

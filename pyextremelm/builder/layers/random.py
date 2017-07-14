@@ -29,6 +29,7 @@ import scipy
 
 # Internal modules
 from .base import ELMLayer
+from pyextremelm.builder.activations.dense import Linear
 
 
 class ELMRandom(ELMLayer):
@@ -74,3 +75,57 @@ class ELMRandom(ELMLayer):
 
     def update(self, X, y=None, decay=1):
         return self.predict(X)
+
+
+class ELMRecurrent(ELMRandom):
+    """
+    This layer is inspired by the so called echo state network and represents a
+    random recurrent layer within the extreme learning machine. The input
+    should be normalized.
+    """
+    def __init__(self, n_features, activation="sigmoid", bias=True,
+                 ortho=False, rng=None,):
+        super().__init__(n_features, activation, bias, ortho, rng)
+        self.state = None
+        self.lin_activation = Linear()
+        self.decay = 1
+
+    def update_state(self, X):
+        len_x, _ = X.shape
+        X = self.add_bias(X)
+        return_state = np.zeros((len_x, self.n_features))
+        for i in range(len_x):
+            return_state[i] = self._single_state_update(X[i, :])
+        return return_state
+    
+    def _single_state_update(self, x):
+        state_update = self.lin_activation.activate(x)
+        if self.state is None:
+            self.state = state_update
+        else:
+            self.state = self.decay*self.state + state_update
+        return self.state
+
+    def fit(self, X, y=None):
+        self.weights = self.train_algorithm(X, y)
+        self.lin_activation.weights = self.weights
+        return self.update(X)
+
+    def update(self, X, y=None, decay=1):
+        self.decay = decay
+        updated_state = self.update_state(X)
+        return self._predict_update(X, updated_state)
+
+    def _predict_updated(self, X, updated_state=None):
+        if updated_state is None:
+            len_x, _ = X.shape
+            updated_state = self.state.reshape((1, -1))
+            updated_state = np.repeat(updated_state, len_x, axis=0)
+        self.activation_fct.weights = np.ones((self.n_features, self.n_features))
+        activated_state = self.activation_fct.activate(updated_state)
+        predicted_state = np.concatenate([activated_state, X], axis=1)
+        return predicted_state
+
+    def predict(X):
+        return self._predict_update(X, None)
+
