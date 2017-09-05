@@ -23,9 +23,9 @@ Based on: https://github.com/pypa/sampleproject
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 # System modules
-from distutils.core import setup
 from codecs import open
 from os import path
+from setuptools import setup, find_packages
 
 # External modules
 
@@ -77,8 +77,7 @@ setup(
 
     # What does your project relate to?
     keywords='machine learning neural network ann elm',
-    packages=["pyextremelm"],
-    package_dir={"pyextremelm": "pyextremelm"},
+    packages=find_packages(),
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().

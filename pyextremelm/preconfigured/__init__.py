@@ -26,7 +26,6 @@ Created for pyextremelm
 # External modules
 
 # Internal modules
-from .supervised import *
-from .unsupervised import *
+from pyextremelm.preconfigured.supervised import ELMRegressor, ELMClassifier
 
 __all__ = ['ELMClassifier', 'ELMRegressor']
