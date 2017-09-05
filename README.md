@@ -64,7 +64,7 @@ It requires:
 <li>Scipy
 <li>Scikit-learn
 <li>Matplotlib (only for future purpose)
-
+<li>Theano
 
 
 References
